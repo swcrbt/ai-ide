@@ -1,0 +1,17 @@
+=== Console Logs ===
+[log] [LSP] 使用模拟模式: typescript
+[info] window.go exists: true
+=== Page Errors ===
+=== HTML Check ===
+Has #App: true
+Has header: true
+Has footer: true
+HTML length: 165150
+=== HTML Snippet ===
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>ai-ide</title>
+  <script type="module" crossorigin="" src="./assets/index.66371d27.js"></script>
+  <link rel="stylesheet" href="./assets/index.1c1632b3.css">
+<link rel="modulepreload" as="script" crossorigin="" href="http://localhost:8080/assets/TerminalPanel.4c60c2c4.js"><link rel="stylesheet" href="http://localhost:8080/assets/TerminalPanel.234ef06e.css"><script async="async" type="text/javascript" src="https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/editor/editor.main.js"></script><script async="async" type="text/javascript" src="https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/nls.messages-loader.js"></script><script asy
