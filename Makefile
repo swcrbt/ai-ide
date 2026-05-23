@@ -51,7 +51,7 @@ help:
 	@echo "$(YELLOW)提示：$(RESET)运行 $(CYAN)make <命令>$(RESET) 执行对应操作"
 	@echo ""
 
-## install: 安装所有依赖（Go + Node.js）
+## install: 安装所有依赖（Go + Node.js + Wails）
 .PHONY: install
 install:
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
@@ -66,6 +66,10 @@ install:
 	@echo "$(CYAN)➜ 安装前端依赖...$(RESET)"
 	@cd $(FRONTEND_DIR) && npm install
 	@echo "$(GREEN)✓ 前端依赖安装完成$(RESET)"
+	@echo ""
+	@echo "$(CYAN)➜ 检查 Wails CLI...$(RESET)"
+	@which wails > /dev/null 2>&1 || (echo "$(YELLOW)⚠ Wails CLI 未安装，正在安装...$(RESET)" && go install github.com/wailsapp/wails/v2/cmd/wails@latest)
+	@echo "$(GREEN)✓ Wails CLI 就绪$(RESET)"
 	@echo ""
 	@echo "$(GREEN)🎉 所有依赖安装完成！$(RESET)"
 
