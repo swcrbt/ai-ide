@@ -25,11 +25,22 @@ RESET  := \033[0m
 # 检测操作系统（用于兼容性处理）
 UNAME_S := $(shell uname -s)
 
+# Go 环境
+GOPATH := $(shell go env GOPATH)
+GOBIN := $(GOPATH)/bin
+
+# Wails CLI 路径（优先使用 GOPATH/bin 下的）
+WAILS := $(shell which wails 2>/dev/null || echo "$(GOBIN)/wails")
+
 # =============================================================================
 # 工具检测函数
 # =============================================================================
 define check_tool
 	@which $(1) > /dev/null 2>&1 || { echo "$(RED)错误：未找到 $(1)，请先安装$(RESET)"; exit 1; }
+endef
+
+define check_wails
+	@test -f $(WAILS) || { echo "$(RED)错误：未找到 wails，请先运行 'make install'$(RESET)"; exit 1; }
 endef
 
 # =============================================================================
@@ -71,6 +82,9 @@ install:
 	@which wails > /dev/null 2>&1 || (echo "$(YELLOW)⚠ Wails CLI 未安装，正在安装...$(RESET)" && go install github.com/wailsapp/wails/v2/cmd/wails@latest)
 	@echo "$(GREEN)✓ Wails CLI 就绪$(RESET)"
 	@echo ""
+	@echo "$(YELLOW)💡 提示：如果运行 'make build' 时提示找不到 wails，请执行以下命令：$(RESET)"
+	@echo "$(CYAN)   export PATH=\"$$PATH:$$(go env GOPATH)/bin\"$(RESET)"
+	@echo ""
 	@echo "$(GREEN)🎉 所有依赖安装完成！$(RESET)"
 
 ## dev: 启动开发模式（wails dev）
@@ -81,11 +95,11 @@ dev:
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
 	$(call check_tool,go)
 	$(call check_tool,node)
-	$(call check_tool,wails)
+	$(call check_wails)
 	@echo "$(YELLOW)提示：按 Ctrl+C 停止开发服务器$(RESET)"
 	@echo "$(CYAN)前端地址: http://localhost:34115$(RESET)"
 	@echo ""
-	@wails dev
+	@$(WAILS) dev
 
 ## build: 构建生产版本
 .PHONY: build
@@ -95,9 +109,9 @@ build:
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
 	$(call check_tool,go)
 	$(call check_tool,node)
-	$(call check_tool,wails)
+	$(call check_wails)
 	@echo "$(CYAN)➜ 构建 Wails 应用...$(RESET)"
-	@wails build
+	@$(WAILS) build
 	@echo "$(GREEN)✓ 构建完成$(RESET)"
 	@echo "$(CYAN)输出目录: $(BIN_DIR)/$(RESET)"
 
