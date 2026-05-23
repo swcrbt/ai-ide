@@ -1,0 +1,368 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* 亮色主题基础变量 */
+  :root {
+    /* Shadcn UI 基础色 */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* 语义化颜色变量 */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+    --info: 217.2 91.2% 59.8%;
+    --info-foreground: 222.2 47.4% 11.2%;
+
+    /* Monaco Editor 亮色主题变量 */
+    --editor-bg: #ffffff;
+    --editor-fg: #2c2c2c;
+    --editor-line-highlight: #f3f3f3;
+    --editor-selection: #add6ff;
+    --editor-line-number: #237893;
+    --editor-line-number-active: #0b216f;
+    --editor-cursor: #000000;
+    --editor-gutter-bg: #f5f5f5;
+    --editor-widget-bg: #f3f3f3;
+    --editor-widget-border: #c8c8c8;
+    --editor-find-match: #a8ac94;
+    --editor-find-match-highlight: #ea5c0055;
+
+    /* 终端亮色主题变量 */
+    --terminal-bg: #ffffff;
+    --terminal-fg: #2c2c2c;
+    --terminal-cursor: #000000;
+    --terminal-black: #2c2c2c;
+    --terminal-red: #c72e0f;
+    --terminal-green: #009000;
+    --terminal-yellow: #795e25;
+    --terminal-blue: #007acc;
+    --terminal-magenta: #af00db;
+    --terminal-cyan: #56b6c2;
+    --terminal-white: #d4d4d4;
+    --terminal-bright-black: #808080;
+    --terminal-bright-red: #cd3131;
+    --terminal-bright-green: #00bc00;
+    --terminal-bright-yellow: #b5cea8;
+    --terminal-bright-blue: #2472c8;
+    --terminal-bright-magenta: #bc05bc;
+    --terminal-bright-cyan: #05b4b4;
+    --terminal-bright-white: #e5e5e5;
+
+    /* 侧边栏和面板变量 */
+    --sidebar-bg: 0 0% 98%;
+    --sidebar-fg: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --panel-bg: 0 0% 98%;
+    --panel-fg: 222.2 84% 4.9%;
+    --panel-border: 214.3 31.8% 91.4%;
+    --statusbar-bg: 222.2 47.4% 11.2%;
+    --statusbar-fg: 210 40% 98%;
+    --tab-bg: 0 0% 100%;
+    --tab-fg: 215.4 16.3% 46.9%;
+    --tab-active-bg: 0 0% 100%;
+    --tab-active-fg: 222.2 84% 4.9%;
+    --tab-border: 214.3 31.8% 91.4%;
+
+    /* 交互状态变量 */
+    --hover-bg: 210 40% 96.1%;
+    --hover-fg: 222.2 84% 4.9%;
+    --active-bg: 210 40% 93%;
+    --active-fg: 222.2 84% 4.9%;
+    --disabled-bg: 210 40% 96.1%;
+    --disabled-fg: 215.4 16.3% 60%;
+
+    /* 滚动条变量 */
+    --scrollbar-bg: transparent;
+    --scrollbar-thumb: 215.4 16.3% 70%;
+    --scrollbar-thumb-hover: 215.4 16.3% 55%;
+
+    /* Git 状态颜色变量 */
+    --git-modified: 38 92% 50%;
+    --git-added: 142.1 76.2% 36.3%;
+    --git-deleted: 0 84.2% 60.2%;
+    --git-untracked: 215.4 16.3% 60%;
+    --git-ignored: 215.4 16.3% 40%;
+  }
+
+  /* 暗色主题基础变量 */
+  .dark {
+    /* Shadcn UI 基础色 */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* 语义化颜色变量 */
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 38 92% 20%;
+    --info: 213.1 94.4% 68.2%;
+    --info-foreground: 222.2 47.4% 11.2%;
+
+    /* Monaco Editor 暗色主题变量 */
+    --editor-bg: #1e1e1e;
+    --editor-fg: #d4d4d4;
+    --editor-line-highlight: #2a2d2e;
+    --editor-selection: #264f78;
+    --editor-line-number: #858585;
+    --editor-line-number-active: #c6c6c6;
+    --editor-cursor: #aeafad;
+    --editor-gutter-bg: #1e1e1e;
+    --editor-widget-bg: #252526;
+    --editor-widget-border: #454545;
+    --editor-find-match: #515c6a;
+    --editor-find-match-highlight: #ea5c0055;
+
+    /* 终端暗色主题变量 */
+    --terminal-bg: #1e1e1e;
+    --terminal-fg: #d4d4d4;
+    --terminal-cursor: #d4d4d4;
+    --terminal-black: #2c2c2c;
+    --terminal-red: #cd3131;
+    --terminal-green: #0dbc79;
+    --terminal-yellow: #e5e510;
+    --terminal-blue: #2472c8;
+    --terminal-magenta: #bc3fbc;
+    --terminal-cyan: #11a8cd;
+    --terminal-white: #e5e5e5;
+    --terminal-bright-black: #666666;
+    --terminal-bright-red: #f14c4c;
+    --terminal-bright-green: #23d18b;
+    --terminal-bright-yellow: #f5f543;
+    --terminal-bright-blue: #3b8eea;
+    --terminal-bright-magenta: #d670d6;
+    --terminal-bright-cyan: #29b8db;
+    --terminal-bright-white: #e5e5e5;
+
+    /* 侧边栏和面板变量 */
+    --sidebar-bg: 222.2 47.4% 11.2%;
+    --sidebar-fg: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --panel-bg: 222.2 47.4% 11.2%;
+    --panel-fg: 210 40% 98%;
+    --panel-border: 217.2 32.6% 17.5%;
+    --statusbar-bg: 222.2 47.4% 11.2%;
+    --statusbar-fg: 210 40% 98%;
+    --tab-bg: 222.2 47.4% 11.2%;
+    --tab-fg: 215 20.2% 65.1%;
+    --tab-active-bg: 222.2 84% 4.9%;
+    --tab-active-fg: 210 40% 98%;
+    --tab-border: 217.2 32.6% 17.5%;
+
+    /* 交互状态变量 */
+    --hover-bg: 217.2 32.6% 17.5%;
+    --hover-fg: 210 40% 98%;
+    --active-bg: 217.2 32.6% 22%;
+    --active-fg: 210 40% 98%;
+    --disabled-bg: 217.2 32.6% 17.5%;
+    --disabled-fg: 215 20.2% 50%;
+
+    /* 滚动条变量 */
+    --scrollbar-bg: transparent;
+    --scrollbar-thumb: 217.2 32.6% 30%;
+    --scrollbar-thumb-hover: 217.2 32.6% 40%;
+
+    /* Git 状态颜色变量 */
+    --git-modified: 43 96% 56%;
+    --git-added: 142.1 70.6% 45.3%;
+    --git-deleted: 0 84.2% 60.2%;
+    --git-untracked: 215 20.2% 65.1%;
+    --git-ignored: 215 20.2% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* 自定义滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--scrollbar-bg));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb));
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--scrollbar-thumb-hover));
+  }
+}
+
+@layer components {
+  :root code[class*='language-'],
+  :root pre[class*='language-'] {
+    color: hsl(var(--foreground));
+    text-shadow: none;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    direction: ltr;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    tab-size: 2;
+    hyphens: none;
+  }
+
+  :root .token.comment,
+  :root .token.prolog,
+  :root .token.doctype,
+  :root .token.cdata {
+    color: #6a737d;
+  }
+
+  :root .token.punctuation {
+    color: hsl(var(--foreground));
+  }
+
+  :root .token.property,
+  :root .token.tag,
+  :root .token.boolean,
+  :root .token.number,
+  :root .token.constant,
+  :root .token.symbol,
+  :root .token.deleted {
+    color: #005cc5;
+  }
+
+  :root .token.selector,
+  :root .token.attr-name,
+  :root .token.string,
+  :root .token.char,
+  :root .token.builtin,
+  :root .token.inserted {
+    color: #032f62;
+  }
+
+  :root .token.operator,
+  :root .token.entity,
+  :root .token.url,
+  :root .language-css .token.string,
+  :root .style .token.string {
+    color: #d73a49;
+  }
+
+  :root .token.atrule,
+  :root .token.attr-value,
+  :root .token.keyword {
+    color: #d73a49;
+  }
+
+  :root .token.function,
+  :root .token.class-name {
+    color: #6f42c1;
+  }
+
+  :root .token.regex,
+  :root .token.important,
+  :root .token.variable {
+    color: #e36209;
+  }
+
+  .dark code[class*='language-'],
+  .dark pre[class*='language-'] {
+    color: hsl(var(--foreground));
+  }
+
+  .dark .token.comment,
+  .dark .token.prolog,
+  .dark .token.doctype,
+  .dark .token.cdata {
+    color: #8b949e;
+  }
+
+  .dark .token.punctuation {
+    color: hsl(var(--foreground));
+  }
+
+  .dark .token.property,
+  .dark .token.tag,
+  .dark .token.boolean,
+  .dark .token.number,
+  .dark .token.constant,
+  .dark .token.symbol,
+  .dark .token.deleted {
+    color: #79c0ff;
+  }
+
+  .dark .token.selector,
+  .dark .token.attr-name,
+  .dark .token.string,
+  .dark .token.char,
+  .dark .token.builtin,
+  .dark .token.inserted {
+    color: #a5d6ff;
+  }
+
+  .dark .token.operator,
+  .dark .token.entity,
+  .dark .token.url,
+  .dark .language-css .token.string,
+  .dark .style .token.string {
+    color: #ff7b72;
+  }
+
+  .dark .token.atrule,
+  .dark .token.attr-value,
+  .dark .token.keyword {
+    color: #ff7b72;
+  }
+
+  .dark .token.function,
+  .dark .token.class-name {
+    color: #d2a8ff;
+  }
+
+  .dark .token.regex,
+  .dark .token.important,
+  .dark .token.variable {
+    color: #ffa657;
+  }
+}
