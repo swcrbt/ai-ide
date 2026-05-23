@@ -1,23 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Copy, Check, FileInput, FileDiff } from 'lucide-react';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-go';
-import 'prismjs/components/prism-rust';
-import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-c';
-import 'prismjs/components/prism-cpp';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-shell-session';
-import 'prismjs/components/prism-yaml';
-import 'prismjs/components/prism-markdown';
-import 'prismjs/components/prism-sql';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 interface CodeBlockProps {
   code: string;
@@ -55,7 +41,7 @@ const LANGUAGE_MAP: Record<string, string> = {
   zsh: 'bash',
 };
 
-function getPrismLanguage(lang: string): string {
+function getHighlighterLanguage(lang: string): string {
   const normalized = lang.toLowerCase().trim();
   return LANGUAGE_MAP[normalized] || normalized;
 }
@@ -63,9 +49,9 @@ function getPrismLanguage(lang: string): string {
 export function CodeBlock({ code, language = 'text', onInsertToEditor, onApplyChanges }: CodeBlockProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const prismLang = getPrismLanguage(language);
-  const grammar = Prism.languages[prismLang] || Prism.languages.plain;
-  const highlighted = Prism.highlight(code, grammar, prismLang);
+  const { resolvedTheme } = useThemeStore();
+  const highlighterLang = getHighlighterLanguage(language);
+  const style = resolvedTheme === 'dark' ? atomDark : oneLight;
 
   const handleCopy = useCallback(async () => {
     try {
@@ -115,12 +101,26 @@ export function CodeBlock({ code, language = 'text', onInsertToEditor, onApplyCh
           </button>
         </div>
       </div>
-      <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code
-          className={`language-${prismLang}`}
-          dangerouslySetInnerHTML={{ __html: highlighted }}
-        />
-      </pre>
+      <div className="p-4 overflow-x-auto text-sm leading-relaxed">
+        <SyntaxHighlighter
+          language={highlighterLang}
+          style={style}
+          customStyle={{
+            margin: 0,
+            padding: 0,
+            background: 'transparent',
+            fontSize: '0.875rem',
+            lineHeight: 1.625,
+          }}
+          codeTagProps={{
+            style: {
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', monospace",
+            },
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 }

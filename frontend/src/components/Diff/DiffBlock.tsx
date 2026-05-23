@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, X, Minus } from 'lucide-react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { DiffBlock as DiffBlockType } from '../../stores/useDiffStore';
-import Prism from 'prismjs';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 interface DiffBlockProps {
   block: DiffBlockType;
@@ -11,10 +12,7 @@ interface DiffBlockProps {
   readOnly?: boolean;
 }
 
-/**
- * 获取Prism语言标识符
- */
-function getPrismLanguage(lang: string): string {
+function getHighlighterLanguage(lang: string): string {
   const map: Record<string, string> = {
     ts: 'typescript',
     tsx: 'tsx',
@@ -38,22 +36,31 @@ function getPrismLanguage(lang: string): string {
   return map[lang.toLowerCase()] || lang.toLowerCase();
 }
 
-/**
- * 语法高亮单行代码
- */
-function highlightLine(code: string, language: string): string {
-  const prismLang = getPrismLanguage(language);
-  const grammar = Prism.languages[prismLang] || Prism.languages.plain;
-  try {
-    return Prism.highlight(code, grammar, prismLang);
-  } catch {
-    return code;
-  }
+function HighlightedLine({ code, language, theme }: { code: string; language: string; theme: 'light' | 'dark' }) {
+  const style = theme === 'dark' ? atomDark : oneLight;
+  return (
+    <SyntaxHighlighter
+      language={language}
+      style={style}
+      PreTag="span"
+      CodeTag="span"
+      customStyle={{
+        margin: 0,
+        padding: 0,
+        background: 'transparent',
+        display: 'inline',
+      }}
+      codeTagProps={{
+        style: {
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+        },
+      }}
+    >
+      {code}
+    </SyntaxHighlighter>
+  );
 }
 
-/**
- * 获取块类型的样式和图标
- */
 function getBlockStyles(type: DiffBlockType['type']) {
   switch (type) {
     case 'add':
@@ -110,7 +117,9 @@ function ModifyIcon() {
 
 export function DiffBlock({ block, language = 'text', onToggleSelection, readOnly = false }: DiffBlockProps) {
   const { t } = useTranslation();
+  const { resolvedTheme } = useThemeStore();
   const styles = getBlockStyles(block.type);
+  const highlighterLang = getHighlighterLanguage(language);
 
   const handleToggle = useCallback(() => {
     if (readOnly || !onToggleSelection) return;
@@ -119,7 +128,6 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
 
   return (
     <div className={`rounded-md border ${styles.borderColor} overflow-hidden mb-2`}>
-      {/* 块头部：类型标识 + 复选框 */}
       <div className={`flex items-center justify-between px-3 py-1.5 ${styles.bgColor} border-b ${styles.borderColor}`}>
         <div className="flex items-center gap-2">
           {styles.icon}
@@ -145,7 +153,6 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
         )}
       </div>
 
-      {/* 代码内容 */}
       <div className="text-sm font-mono">
         {block.type === 'delete' && (
           <div className="divide-y divide-destructive/10">
@@ -158,12 +165,9 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
                   -
                 </span>
                 <pre className="flex-1 px-2 py-0.5 overflow-x-auto">
-                  <code
-                    className="text-destructive"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightLine(line, language),
-                    }}
-                  />
+                  <code className="text-destructive">
+                    <HighlightedLine code={line} language={highlighterLang} theme={resolvedTheme} />
+                  </code>
                 </pre>
               </div>
             ))}
@@ -181,12 +185,9 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
                   {block.newStartLine + idx}
                 </span>
                 <pre className="flex-1 px-2 py-0.5 overflow-x-auto">
-                  <code
-                    className="text-success"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightLine(line, language),
-                    }}
-                  />
+                  <code className="text-success">
+                    <HighlightedLine code={line} language={highlighterLang} theme={resolvedTheme} />
+                  </code>
                 </pre>
               </div>
             ))}
@@ -195,7 +196,6 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
 
         {block.type === 'modify' && (
           <div>
-            {/* 旧代码 */}
             <div className="divide-y divide-warning/10">
               {block.oldLines.map((line, idx) => (
                 <div key={`old-${idx}`} className="flex">
@@ -206,19 +206,14 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
                     -
                   </span>
                   <pre className="flex-1 px-2 py-0.5 overflow-x-auto">
-                    <code
-                      className="text-destructive line-through opacity-60"
-                      dangerouslySetInnerHTML={{
-                        __html: highlightLine(line, language),
-                      }}
-                    />
+                    <code className="text-destructive line-through opacity-60">
+                      <HighlightedLine code={line} language={highlighterLang} theme={resolvedTheme} />
+                    </code>
                   </pre>
                 </div>
               ))}
             </div>
-            {/* 分隔线 */}
             <div className="h-px bg-warning/20" />
-            {/* 新代码 */}
             <div className="divide-y divide-warning/10">
               {block.newLines.map((line, idx) => (
                 <div key={`new-${idx}`} className="flex">
@@ -229,12 +224,9 @@ export function DiffBlock({ block, language = 'text', onToggleSelection, readOnl
                     {block.newStartLine + idx}
                   </span>
                   <pre className="flex-1 px-2 py-0.5 overflow-x-auto">
-                    <code
-                      className="text-success"
-                      dangerouslySetInnerHTML={{
-                        __html: highlightLine(line, language),
-                      }}
-                    />
+                    <code className="text-success">
+                      <HighlightedLine code={line} language={highlighterLang} theme={resolvedTheme} />
+                    </code>
                   </pre>
                 </div>
               ))}
