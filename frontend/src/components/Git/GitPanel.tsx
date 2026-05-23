@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useGitStore } from '../../stores/useGitStore';
+import type { GitFileStatus } from '../../types/wails';
 import {
   GitBranch,
   GitCommit,
@@ -160,7 +161,7 @@ export function GitPanel() {
 
   const handleToggleStage = useCallback(
     (path: string) => {
-      const isStaged = status?.staged.some((f) => f.path === path);
+      const isStaged = status?.staged?.some((f: { path: string }) => f.path === path);
       if (isStaged) {
         unstageFiles([path]);
       } else {
@@ -172,7 +173,7 @@ export function GitPanel() {
 
   const handleViewDiff = useCallback(
     (path: string) => {
-      const isStaged = status?.staged.some((f) => f.path === path);
+      const isStaged = status?.staged?.some((f: { path: string }) => f.path === path);
       loadDiff(path, isStaged || false);
       setSelectedFile(path);
       setShowDiff(true);
@@ -280,7 +281,7 @@ export function GitPanel() {
               <>
                 {status.staged.length > 0 && (
                   <CollapsibleSection title="已暂存" count={status.staged.length}>
-                    {status.staged.map((file) => (
+                    {status.staged.map((file: GitFileStatus) => (
                       <FileListItem
                         key={`staged-${file.path}`}
                         file={file}
@@ -295,7 +296,7 @@ export function GitPanel() {
 
                 {status.modified.length > 0 && (
                   <CollapsibleSection title="已修改" count={status.modified.length}>
-                    {status.modified.map((file) => (
+                    {status.modified.map((file: GitFileStatus) => (
                       <FileListItem
                         key={`modified-${file.path}`}
                         file={file}
@@ -310,7 +311,7 @@ export function GitPanel() {
 
                 {status.untracked.length > 0 && (
                   <CollapsibleSection title="未追踪" count={status.untracked.length}>
-                    {status.untracked.map((file) => (
+                    {status.untracked.map((file: GitFileStatus) => (
                       <FileListItem
                         key={`untracked-${file.path}`}
                         file={file}
@@ -325,7 +326,7 @@ export function GitPanel() {
 
                 {status.deleted.length > 0 && (
                   <CollapsibleSection title="已删除" count={status.deleted.length}>
-                    {status.deleted.map((file) => (
+                    {status.deleted.map((file: GitFileStatus) => (
                       <FileListItem
                         key={`deleted-${file.path}`}
                         file={file}

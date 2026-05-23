@@ -8,6 +8,20 @@
 <!-- Session notes. Auto-pruned after 7 days. -->
 ### 2026-05-23 02:19
 ### 2026-05-23 02:20
+### 2026-05-23 08:30
+前端测试环境修复记录：
+1. vitest 4.x 使用 rolldown/oxc 而非 esbuild，与 @vitejs/plugin-react v2 存在 preamble 兼容性问题。解决方案：从 vitest.config.ts 中移除 react() 插件，让 oxc 使用默认 JSX 转换。
+2. jsdom 29.x 依赖 html-encoding-sniffer 6.x，后者使用 ESM-only 的 @exodus/bytes，导致 CJS require() 错误。解决方案：降级 jsdom 到 24.x。
+3. setup.ts 中使用了 jest.fn()，但 vitest 使用 vi.fn()。已修复为导入 vi 并使用 vi.fn()。
+4. useChatStore.sendMessage() 存在逻辑 bug：用户消息被添加了两次。已修复。
+5. useChatStore.test.ts 第220行引用了未定义的 useEditorStore，应为 useChatStore。已修复。
+6. Editor.test.tsx 缺少 LSPProvider mock 且 TabBar mock 使用了错误的导出方式（default 而非命名导出）。已修复。
+7. SettingsPanel 的关闭按钮缺少 title 属性，影响测试定位。已添加 title="关闭"。
+8. Editor.tsx 最外层 div 缺少 data-testid="editor-container"。已添加。
+
+
+## 2026-05-23 02:19
+### 2026-05-23 02:20
 ## 多tab + Diff编辑器实现总结
 
 ### 创建的文件

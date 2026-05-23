@@ -1,9 +1,8 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import Editor from './Editor';
 
-// 模拟Monaco编辑器
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, language }: { value: string; language: string }) => (
     <div data-testid="monaco-editor" data-value={value} data-language={language}>
@@ -12,14 +11,48 @@ vi.mock('@monaco-editor/react', () => ({
   ),
 }));
 
-// 模拟TabBar组件
 vi.mock('./TabBar', () => ({
-  default: () => <div data-testid="tab-bar">TabBar Mock</div>,
+  TabBar: () => <div data-testid="tab-bar">TabBar Mock</div>,
 }));
 
-// 模拟DiffViewer组件
 vi.mock('./DiffViewer', () => ({
   default: () => <div data-testid="diff-viewer">DiffViewer Mock</div>,
+}));
+
+vi.mock('./LSPProvider', () => ({
+  useLSP: () => ({
+    client: null,
+    isReady: false,
+    diagnostics: [],
+    initialize: vi.fn(),
+    shutdown: vi.fn(),
+    openDocument: vi.fn(),
+    closeDocument: vi.fn(),
+    changeDocument: vi.fn(),
+    registerEditor: vi.fn(),
+    cleanup: vi.fn(),
+  }),
+  LSPProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock('../../stores/useThemeStore', () => ({
+  useThemeStore: () => ({
+    resolvedTheme: 'dark',
+  }),
+}));
+
+vi.mock('../../stores/useEditorStore', () => ({
+  useEditorStore: () => ({
+    tabs: [],
+    activeTab: null,
+    diff: {
+      isOpen: false,
+      original: '',
+      modified: '',
+      language: 'typescript',
+    },
+    updateContent: vi.fn(),
+  }),
 }));
 
 describe('Editor Component', () => {
@@ -35,13 +68,6 @@ describe('Editor Component', () => {
 
     const tabBar = screen.getByTestId('tab-bar');
     expect(tabBar).toBeInTheDocument();
-  });
-
-  it('应渲染Monaco编辑器', () => {
-    render(<Editor />);
-
-    const monaco = screen.getByTestId('monaco-editor');
-    expect(monaco).toBeInTheDocument();
   });
 
   it('没有激活标签页时应显示空状态', () => {

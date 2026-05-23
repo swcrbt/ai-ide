@@ -82,7 +82,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [
         ...state.messages,
-        userMessage,
         {
           id: assistantMessageId,
           role: 'assistant',

@@ -280,7 +280,7 @@ export default function Editor() {
   }, [editorMode, activeTabData?.language]);
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div data-testid="editor-container" className="flex flex-col w-full h-full">
       <TabBar />
 
       {/* 大文件降级提示 */}

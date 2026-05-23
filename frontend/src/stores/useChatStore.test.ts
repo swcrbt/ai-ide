@@ -217,7 +217,7 @@ describe('useChatStore', () => {
 
       store.sendMessage(longContent);
 
-      const state = useEditorStore.getState();
+      const state = useChatStore.getState();
       const userMsg = state.messages.find((m) => m.role === 'user');
       expect(userMsg?.content).toBe(longContent);
     });

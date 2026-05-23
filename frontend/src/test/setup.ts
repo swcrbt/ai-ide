@@ -1,27 +1,31 @@
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
-// 模拟 window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation((query: string) => ({
+  value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   })),
 });
 
-// 模拟 document.documentElement
 Object.defineProperty(document, 'documentElement', {
   writable: true,
   value: {
     classList: {
-      add: jest.fn(),
-      remove: jest.fn(),
+      add: vi.fn(),
+      remove: vi.fn(),
     },
   },
+});
+
+Object.defineProperty(document, 'queryCommandSupported', {
+  writable: true,
+  value: vi.fn(() => false),
 });

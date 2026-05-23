@@ -29,8 +29,18 @@ UNAME_S := $(shell uname -s)
 GOPATH := $(shell go env GOPATH)
 GOBIN := $(GOPATH)/bin
 
-# Wails CLI 路径（优先使用 GOPATH/bin 下的）
-WAILS := $(shell which wails 2>/dev/null || echo "$(GOBIN)/wails")
+# Wails CLI 路径检测
+# 1. 优先从 PATH 中查找
+# 2. 回退到 GOPATH/bin
+# 3. 如果都找不到，设为空值
+WAILS := $(shell \
+	W=$$(which wails 2>/dev/null); \
+	if [ -n "$$W" ]; then \
+		echo "$$W"; \
+	elif [ -f "$(GOBIN)/wails" ]; then \
+		echo "$(GOBIN)/wails"; \
+	fi \
+)
 
 # =============================================================================
 # 工具检测函数
@@ -40,7 +50,11 @@ define check_tool
 endef
 
 define check_wails
-	@test -f $(WAILS) || { echo "$(RED)错误：未找到 wails，请先运行 'make install'$(RESET)"; exit 1; }
+	@if [ -z "$(WAILS)" ] || [ ! -f "$(WAILS)" ]; then \
+		echo "$(RED)错误：未找到 wails，请先运行 'make install'$(RESET)"; \
+		echo "$(YELLOW)提示：你也可以执行 export PATH=\"\$$PATH:$(GOBIN)\"$(RESET)"; \
+		exit 1; \
+	fi
 endef
 
 # =============================================================================
@@ -226,7 +240,11 @@ info:
 	@echo "$(GREEN)依赖版本:$(RESET)"
 	@which go > /dev/null 2>&1 && echo "  $(CYAN)Go:$(RESET)       $$(go version)" || echo "  $(RED)Go:$(RESET)       未安装"
 	@which node > /dev/null 2>&1 && echo "  $(CYAN)Node.js:$(RESET)  $$(node --version)" || echo "  $(RED)Node.js:$(RESET)  未安装"
-	@which wails > /dev/null 2>&1 && echo "  $(CYAN)Wails:$(RESET)    $$(wails version 2>/dev/null | head -1)" || echo "  $(RED)Wails:$(RESET)    未安装"
+	@if [ -n "$(WAILS)" ] && [ -f "$(WAILS)" ]; then \
+		echo "  $(CYAN)Wails:$(RESET)    $$($(WAILS) version 2>/dev/null | head -1) ($(WAILS))"; \
+	else \
+		echo "  $(RED)Wails:$(RESET)    未安装"; \
+	fi
 	@echo ""
 	@echo "$(GREEN)目录结构:$(RESET)"
 	@echo "  $(CYAN)前端目录:$(RESET)   $(FRONTEND_DIR)/"

@@ -17,7 +17,7 @@ import {
   IsGitRepo,
   SetRepoPath,
   GetRepoPath,
-} from '../../wailsjs/go/main/GitService';
+} from '../types/wails';
 import type {
   GitStatus,
   GitDiff,
@@ -25,7 +25,7 @@ import type {
   GitCommit,
   GitSummary,
   GitFileStatus,
-} from '../../wailsjs/go/main/GitService';
+} from '../types/wails';
 
 // 文件状态对应的颜色映射
 const statusColorMap: Record<string, string> = {

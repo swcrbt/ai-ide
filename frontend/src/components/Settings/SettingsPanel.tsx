@@ -701,6 +701,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             <button
               onClick={onClose}
               className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors ml-1"
+              title="关闭"
             >
               <X size={16} />
             </button>
