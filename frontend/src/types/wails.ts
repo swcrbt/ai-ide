@@ -106,6 +106,12 @@ export { fs };
 // Git 服务函数 / Git Service Functions
 // ---------------------------------------------------------------------------
 
+/** 检查分支是否存在 */
+export { BranchExists } from '../../wailsjs/go/main/App';
+
+/** 创建并切换到新分支 */
+export { CreateBranch } from '../../wailsjs/go/main/App';
+
 /** 获取当前分支名称 */
 export { Branch } from '../../wailsjs/go/git/GitService';
 

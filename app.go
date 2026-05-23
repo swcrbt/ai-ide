@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/swcrbt/ai-ide/internal/config"
@@ -58,27 +57,17 @@ func (a *App) Greet(name string) string {
 }
 
 // GetSettings 获取应用配置（前端通过 Wails 调用）
-func (a *App) GetSettings() (string, error) {
+func (a *App) GetSettings() (config.Settings, error) {
 	settings, err := config.GetSettings()
 	if err != nil {
-		return "", fmt.Errorf("获取配置失败: %w", err)
+		return config.Settings{}, fmt.Errorf("获取配置失败: %w", err)
 	}
 
-	data, err := json.Marshal(settings)
-	if err != nil {
-		return "", fmt.Errorf("序列化配置失败: %w", err)
-	}
-
-	return string(data), nil
+	return settings, nil
 }
 
 // SaveSettings 保存应用配置（前端通过 Wails 调用）
-func (a *App) SaveSettings(settingsJSON string) error {
-	var settings config.Settings
-	if err := json.Unmarshal([]byte(settingsJSON), &settings); err != nil {
-		return fmt.Errorf("解析配置失败: %w", err)
-	}
-
+func (a *App) SaveSettings(settings config.Settings) error {
 	if err := config.SaveSettings(settings); err != nil {
 		return fmt.Errorf("保存配置失败: %w", err)
 	}
@@ -92,4 +81,21 @@ func (a *App) ResetSettings() error {
 		return fmt.Errorf("重置配置失败: %w", err)
 	}
 	return nil
+}
+
+// CreateBranch 创建并切换到新分支
+func (a *App) CreateBranch(branch string) error {
+	if err := a.GitService.CreateBranch(branch); err != nil {
+		return fmt.Errorf("创建分支失败: %w", err)
+	}
+	return nil
+}
+
+// BranchExists 检查分支是否存在
+func (a *App) BranchExists(branch string) (bool, error) {
+	exists, err := a.GitService.BranchExists(branch)
+	if err != nil {
+		return false, fmt.Errorf("检查分支失败: %w", err)
+	}
+	return exists, nil
 }

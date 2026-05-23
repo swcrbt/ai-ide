@@ -4,10 +4,7 @@ import type { GitFileStatus } from '../../types/wails';
 import {
   GitBranch,
   GitCommit,
-  RotateCcw,
   Check,
-  Upload,
-  Download,
   FileText,
   FilePlus,
   FileMinus,
@@ -133,19 +130,14 @@ export function GitPanel() {
   const {
     status,
     summary,
-    currentBranch,
     isLoading,
     isCommitting,
-    isPushing,
-    isPulling,
     commitMessage,
     diffContent,
     selectedFile,
     stageFiles,
     unstageFiles,
     commit,
-    push,
-    pull,
     loadStatus,
     loadDiff,
     setCommitMessage,
@@ -204,48 +196,7 @@ export function GitPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background border-r border-border">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        <div className="flex items-center gap-2">
-          <GitBranch size={14} className="text-primary" />
-          <span className="text-sm font-medium text-foreground">
-            {currentBranch || 'main'}
-          </span>
-          {summary && summary.ahead > 0 && (
-            <span className="text-xs text-success">↑{summary.ahead}</span>
-          )}
-          {summary && summary.behind > 0 && (
-            <span className="text-xs text-destructive">↓{summary.behind}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="p-1.5 rounded hover:bg-accent text-muted-foreground disabled:opacity-50"
-            title="刷新"
-          >
-            <RotateCcw size={12} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-          <button
-            onClick={pull}
-            disabled={isPulling}
-            className="p-1.5 rounded hover:bg-accent text-muted-foreground disabled:opacity-50"
-            title="拉取"
-          >
-            <Download size={12} />
-          </button>
-          <button
-            onClick={push}
-            disabled={isPushing}
-            className="p-1.5 rounded hover:bg-accent text-muted-foreground disabled:opacity-50"
-            title="推送"
-          >
-            <Upload size={12} />
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col flex-1 bg-background">
       <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab('changes')}

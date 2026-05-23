@@ -18,6 +18,7 @@ import type { FileNode, FileOperation } from '../../stores/useExplorerStore';
 interface FileTreeNodeProps {
   node: FileNode;
   depth?: number;
+  onFileClick?: (path: string) => void;
 }
 
 const gitStatusConfig: Record<string, { color: string; label: string }> = {
@@ -52,7 +53,7 @@ function getFileIcon(fileName: string) {
  * 渲染单个文件或目录节点，支持点击展开/折叠、打开文件等操作。
  * 通过 depth 参数控制缩进层级。
  */
-export function FileTreeNodeRow({ node, depth = 0 }: FileTreeNodeProps) {
+export function FileTreeNodeRow({ node, depth = 0, onFileClick }: FileTreeNodeProps) {
   const { expandedPaths, selectedPath, toggleNode, selectNode, performOperation } =
     useExplorerStore();
   const { openFile } = useEditorStore();
@@ -64,6 +65,8 @@ export function FileTreeNodeRow({ node, depth = 0 }: FileTreeNodeProps) {
     selectNode(node.path);
     if (node.isDir) {
       toggleNode(node.path);
+    } else if (onFileClick) {
+      onFileClick(node.path);
     } else {
       openFile(node.path, '');
     }
@@ -147,17 +150,17 @@ export function FileTreeNodeRow({ node, depth = 0 }: FileTreeNodeProps) {
  *
  * 保留递归渲染能力，用于小项目或不需要虚拟滚动的场景。
  */
-export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
+export function FileTreeNode({ node, depth = 0, onFileClick }: FileTreeNodeProps) {
   const { expandedPaths } = useExplorerStore();
   const isExpanded = expandedPaths.has(node.path);
 
   return (
     <div>
-      <FileTreeNodeRow node={node} depth={depth} />
+      <FileTreeNodeRow node={node} depth={depth} onFileClick={onFileClick} />
       {node.isDir && isExpanded && node.children && (
         <div>
           {node.children.map((child) => (
-            <FileTreeNode key={child.path} node={child} depth={depth + 1} />
+            <FileTreeNode key={child.path} node={child} depth={depth + 1} onFileClick={onFileClick} />
           ))}
         </div>
       )}

@@ -4,15 +4,36 @@ import { useThemeStore } from './stores/useThemeStore';
 import { useEditorStore } from './stores/useEditorStore';
 import { useExplorerStore } from './stores/useExplorerStore';
 import { useAppStore } from './stores/useAppStore';
+import { useTaskStore } from './stores/useTaskStore';
+import { useGitStore } from './stores/useGitStore';
 import { LSPProvider } from './components/Editor/LSPProvider';
 import { CommandPalette, type CommandPaletteItem } from './components/CommandPalette';
 import { useShortcuts } from './hooks/useShortcuts';
-import { Sun, Moon, Monitor, Languages, FilePlus, GitBranch, X, Check, Settings } from 'lucide-react';
+import {
+  Sun,
+  Moon,
+  Monitor,
+  Languages,
+  Settings,
+  X,
+  Check,
+  Plus,
+} from 'lucide-react';
 import { GitPanel } from './components/Git/GitPanel';
+import { SettingsPanel } from './components/Settings/SettingsPanel';
+import { LeftPanel } from './components/Layout/LeftPanel';
+import { RightPanel } from './components/Layout/RightPanel';
+import { BottomPanel } from './components/Layout/BottomPanel';
+import { StatusBar } from './components/Layout/StatusBar';
+import { FileTree } from './components/Explorer/FileTree';
+import { ChatPanel } from './components/Chat/ChatPanel';
+import { TaskCard } from './components/Task/TaskCard';
+import { TaskCreateDialog } from './components/Task/TaskCreateDialog';
+import { BranchExists, CreateBranch } from './types/wails';
 
 // 动态导入大型组件，减少初始加载时间
 const Editor = lazy(() => import('./components/Editor/Editor'));
-const TerminalPanel = lazy(() => import('./components/Terminal/TerminalPanel'));
+const Terminal = lazy(() => import('./components/Terminal/Terminal').then(m => ({ default: m.Terminal })));
 
 /**
  * 加载中占位组件
@@ -24,7 +45,6 @@ function LoadingFallback({ message = '加载中...' }: { message?: string }) {
     </div>
   );
 }
-import { SettingsPanel } from './components/Settings/SettingsPanel';
 
 const demoFiles = [
   {
@@ -100,6 +120,7 @@ export function debounce(fn, delay) {
   },
 ];
 
+type LeftTab = 'task' | 'git';
 type BottomTab = 'terminal' | 'ai';
 
 const themeCycle: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
@@ -130,14 +151,26 @@ function App() {
   const { t, i18n } = useTranslation();
   const { theme, resolvedTheme, initTheme, setTheme } = useThemeStore();
   const { tabs, activeTab, openFile, closeFile, switchTab } = useEditorStore();
-  const { toggleVisibility } = useExplorerStore();
+  const { selectedPath, selectNode } = useExplorerStore();
   const { sidebarOpen, toggleSidebar } = useAppStore();
+  const {
+    tasks,
+    activeTaskId,
+    addTask,
+    deleteTask,
+    setActiveTask,
+  } = useTaskStore();
+  const { currentBranch, status: gitStatus } = useGitStore();
 
+  const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [fileTreeOpen, setFileTreeOpen] = useState(true);
+  const [bottomPanelOpen, setBottomPanelOpen] = useState(true);
+  const [leftTab, setLeftTab] = useState<LeftTab>('task');
   const [bottomTab, setBottomTab] = useState<BottomTab>('terminal');
-  const [gitPanelOpen, setGitPanelOpen] = useState(false);
-  const [bottomPanelVisible, setBottomPanelVisible] = useState(true);
+  const [rightTool, setRightTool] = useState<'explorer' | 'editor' | 'search' | 'git' | 'settings'>('explorer');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const [taskCreateOpen, setTaskCreateOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const {
@@ -152,6 +185,22 @@ function App() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 2000);
   }, []);
+
+  useEffect(() => {
+    if (selectedPath && !selectedPath.endsWith('/')) {
+      setActiveFile(selectedPath);
+    }
+  }, [selectedPath]);
+
+  const taskCompleted = tasks.filter((t) => t.status === 'completed').length;
+  const taskTotal = tasks.length;
+
+  const gitChangeCount = gitStatus
+    ? (gitStatus.staged?.length || 0) +
+      (gitStatus.modified?.length || 0) +
+      (gitStatus.untracked?.length || 0) +
+      (gitStatus.deleted?.length || 0)
+    : 0;
 
   // 注册快捷键命令处理器
   useEffect(() => {
@@ -236,15 +285,16 @@ function App() {
     });
 
     registerHandler('view.toggleBottomPanel', () => {
-      setBottomPanelVisible((prev) => !prev);
+      setBottomPanelOpen((prev) => !prev);
     });
 
     registerHandler('view.showExplorer', () => {
       if (!sidebarOpen) toggleSidebar();
+      setFileTreeOpen(true);
     });
 
     registerHandler('view.showGit', () => {
-      setGitPanelOpen(true);
+      setLeftTab('git');
     });
 
     registerHandler('view.showExtensions', () => {
@@ -256,7 +306,7 @@ function App() {
     });
 
     registerHandler('view.toggleTerminal', () => {
-      setBottomPanelVisible((prev) => !prev);
+      setBottomPanelOpen((prev) => !prev);
       setBottomTab('terminal');
     });
 
@@ -273,8 +323,8 @@ function App() {
         setSettingsPanelOpen(false);
       } else if (commandPaletteOpen) {
         setCommandPaletteOpen(false);
-      } else if (gitPanelOpen) {
-        setGitPanelOpen(false);
+      } else if (taskCreateOpen) {
+        setTaskCreateOpen(false);
       }
     });
 
@@ -306,9 +356,18 @@ function App() {
       unregisterHandler('general.escape');
     };
   }, [
-    activeTab, closeFile, openFile, switchTab,
-    registerHandler, unregisterHandler, toggleSidebar,
-    sidebarOpen, gitPanelOpen, commandPaletteOpen, settingsPanelOpen, showAppToast,
+    activeTab,
+    closeFile,
+    openFile,
+    switchTab,
+    registerHandler,
+    unregisterHandler,
+    toggleSidebar,
+    sidebarOpen,
+    commandPaletteOpen,
+    settingsPanelOpen,
+    taskCreateOpen,
+    showAppToast,
   ]);
 
   // 生成命令面板数据
@@ -346,10 +405,10 @@ function App() {
     });
     handlerMap.set('view.commandPalette', () => setCommandPaletteOpen(true));
     handlerMap.set('view.toggleSidebar', () => toggleSidebar());
-    handlerMap.set('view.toggleBottomPanel', () => setBottomPanelVisible((p) => !p));
-    handlerMap.set('view.showGit', () => setGitPanelOpen(true));
+    handlerMap.set('view.toggleBottomPanel', () => setBottomPanelOpen((p) => !p));
+    handlerMap.set('view.showGit', () => setLeftTab('git'));
     handlerMap.set('view.toggleTerminal', () => {
-      setBottomPanelVisible((p) => !p);
+      setBottomPanelOpen((p) => !p);
       setBottomTab('terminal');
     });
     handlerMap.set('settings.open', () => setSettingsPanelOpen(true));
@@ -364,15 +423,16 @@ function App() {
           .replace('shift+', 'Shift+')
           .replace('meta+', '⌘')
           .toUpperCase(),
-        category: s.category === 'file'
-          ? '文件'
-          : s.category === 'edit'
-          ? '编辑'
-          : s.category === 'navigate'
-          ? '导航'
-          : s.category === 'view'
-          ? '视图'
-          : '终端',
+        category:
+          s.category === 'file'
+            ? '文件'
+            : s.category === 'edit'
+              ? '编辑'
+              : s.category === 'navigate'
+                ? '导航'
+                : s.category === 'view'
+                  ? '视图'
+                  : '终端',
         action: handlerMap.get(s.command)!,
       }));
   }, [shortcuts, activeTab, closeFile, openFile, switchTab, toggleSidebar, showAppToast]);
@@ -390,6 +450,36 @@ function App() {
   function handleOpenDemoFile(index: number) {
     const file = demoFiles[index];
     openFile(file.path, file.content, file.language);
+    setActiveFile(file.path);
+  }
+
+  async function handleCreateTask(task: {
+    title: string;
+    branch: string;
+    tag: string;
+    tagColor: string;
+  }) {
+    try {
+      const exists = await BranchExists(task.branch);
+      if (exists) {
+        const shouldSwitch = window.confirm(
+          `分支 "${task.branch}" 已存在。\n\n是否切换到该分支？\n（取消则重新输入）`
+        );
+        if (shouldSwitch) {
+          await CreateBranch(task.branch);
+        } else {
+          return;
+        }
+      } else {
+        await CreateBranch(task.branch);
+      }
+      
+      addTask({ ...task, status: 'pending' });
+      setTaskCreateOpen(false);
+      showAppToast(`任务已创建: ${task.title}`);
+    } catch (error) {
+      showAppToast(`创建分支失败: ${error}`);
+    }
   }
 
   useEffect(() => {
@@ -400,12 +490,12 @@ function App() {
     if (tabs.length === 0) {
       const file = demoFiles[0];
       openFile(file.path, file.content, file.language);
+      setActiveFile(file.path);
     }
   }, []);
 
   return (
-    <div id="App" className="min-h-screen flex flex-col">
-      {/* Toast 通知 */}
+    <div className="h-screen flex flex-col overflow-hidden">
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground shadow-lg">
           <Check size={16} />
@@ -413,12 +503,13 @@ function App() {
         </div>
       )}
 
-      {/* 快捷键 Toast 通知 */}
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground shadow-lg"
-          style={{ marginTop: `${(toasts.indexOf(toast) + (toastMessage ? 1 : 0)) * 48}px` }}
+          style={{
+            marginTop: `${(toasts.indexOf(toast) + (toastMessage ? 1 : 0)) * 48}px`,
+          }}
         >
           <Check size={16} className="text-success" />
           <span className="text-sm">{toast.message}</span>
@@ -436,17 +527,6 @@ function App() {
           <span className="font-semibold text-foreground">{t('app.title')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setGitPanelOpen(!gitPanelOpen)}
-            className={`p-2 rounded-lg transition-colors ${
-              gitPanelOpen
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary hover:bg-secondary/80 text-foreground'
-            }`}
-            title="Git"
-          >
-            <GitBranch size={18} />
-          </button>
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
@@ -476,101 +556,111 @@ function App() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Git 面板 */}
-        {gitPanelOpen && (
-          <aside className="w-72 border-r border-border bg-background flex-shrink-0 overflow-hidden">
-            <GitPanel />
-          </aside>
-        )}
+        <LeftPanel
+          taskCount={taskTotal}
+          gitChangeCount={gitChangeCount}
+          activeTab={leftTab}
+          onTabChange={setLeftTab}
+        >
+          {{
+            taskPanel: (
+              <div className="p-3 space-y-3">
+                <button
+                  onClick={() => setTaskCreateOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground hover:bg-accent transition-colors"
+                >
+                  <Plus size={16} />
+                  <span>新建任务</span>
+                </button>
 
-        {/* 文件浏览器侧边栏 */}
-        {sidebarOpen && (
-          <aside className="w-60 border-r border-border bg-background flex-shrink-0 overflow-hidden">
-            <div className="h-full flex flex-col">
-              <div className="h-9 flex items-center px-3 border-b border-border text-xs font-medium text-muted-foreground">
-                资源管理器
-              </div>
-              <div className="flex-1 overflow-auto p-2">
-                <div className="text-sm text-muted-foreground">
-                  <p className="px-2 py-1">📁 src</p>
-                  <p className="px-2 py-1 pl-4">📁 components</p>
-                  <p className="px-2 py-1 pl-8">📄 Editor.tsx</p>
-                  <p className="px-2 py-1 pl-4">📁 stores</p>
-                  <p className="px-2 py-1 pl-4">📄 App.tsx</p>
+                <div className="space-y-2">
+                  {tasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      isActive={task.id === activeTaskId}
+                      onClick={() => setActiveTask(task.id)}
+                      onDelete={() => deleteTask(task.id)}
+                    />
+                  ))}
                 </div>
+
+                {tasks.length === 0 && (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    <p>暂无任务</p>
+                    <p className="text-xs mt-1">点击上方按钮创建新任务</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </aside>
-        )}
+            ),
+            gitPanel: <GitPanel />,
+          }}
+        </LeftPanel>
 
-        <aside className="w-12 flex flex-col items-center gap-1 py-2 border-r border-border bg-background shrink-0">
-          <button
-            onClick={() => handleOpenDemoFile(0)}
-            className="w-9 h-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            title="打开 main.ts"
-          >
-            <FilePlus size={18} />
-          </button>
-          <button
-            onClick={() => handleOpenDemoFile(1)}
-            className="w-9 h-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            title="打开 helper.js"
-          >
-            <FilePlus size={18} />
-          </button>
-          <button
-            onClick={() => handleOpenDemoFile(2)}
-            className="w-9 h-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            title="打开 package.json"
-          >
-            <FilePlus size={18} />
-          </button>
-        </aside>
-
-        <main className="flex-1 overflow-hidden">
-          <LSPProvider>
-            <Suspense fallback={<LoadingFallback message="编辑器加载中..." />}>
-              <Editor />
-            </Suspense>
-          </LSPProvider>
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {activeFile ? (
+            <LSPProvider>
+              <Suspense fallback={<LoadingFallback message="编辑器加载中..." />}>
+                <Editor />
+              </Suspense>
+            </LSPProvider>
+          ) : (
+            <ChatPanel />
+          )}
         </main>
+
+        <RightPanel
+          isOpen={fileTreeOpen}
+          onToggle={() => setFileTreeOpen(!fileTreeOpen)}
+          activeTool={rightTool}
+          onToolChange={setRightTool}
+        >
+          {{
+            explorer: <FileTree onFileClick={(path) => openFile(path, '')} />,
+          }}
+        </RightPanel>
       </div>
 
-      {/* 底部面板：终端 / AI 助手 */}
-      {bottomPanelVisible && (
-        <div className="h-64 border-t border-border">
-          <Suspense fallback={<LoadingFallback message="面板加载中..." />}>
-            <TerminalPanel
-              theme={resolvedTheme}
-              activeTab={bottomTab}
-              onTabChange={setBottomTab}
-            />
-          </Suspense>
-        </div>
+      {activeFile && bottomPanelOpen && (
+        <BottomPanel
+          activeTab={bottomTab}
+          onTabChange={setBottomTab}
+          onHide={() => setBottomPanelOpen(false)}
+        >
+          {{
+            terminal: (
+              <Suspense fallback={<LoadingFallback message="终端加载中..." />}>
+                <Terminal theme={resolvedTheme} />
+              </Suspense>
+            ),
+            aiChat: <ChatPanel />,
+          }}
+        </BottomPanel>
       )}
 
-      <footer className="h-6 flex items-center px-3 border-t border-border bg-background text-xs text-muted-foreground shrink-0">
-        <span>AI IDE</span>
-        <span className="mx-2">|</span>
-        <span>{tabs.length > 0 ? `${tabs.length} 个文件已打开` : '就绪'}</span>
-        <span className="mx-2">|</span>
-        <span className="flex items-center gap-1">
-          <kbd className="px-1 rounded bg-secondary text-secondary-foreground border border-border">Ctrl+Shift+P</kbd>
-          <span>命令面板</span>
-        </span>
-      </footer>
+      <StatusBar
+        branch={currentBranch || 'main'}
+        taskCompleted={taskCompleted}
+        taskTotal={taskTotal}
+        aiStatus="就绪"
+        language={activeTab ? activeTab.split('.').pop() || '' : undefined}
+      />
 
-      {/* 设置面板 */}
       <SettingsPanel
         isOpen={settingsPanelOpen}
         onClose={() => setSettingsPanelOpen(false)}
       />
 
-      {/* 命令面板 */}
       <CommandPalette
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         items={commandPaletteItems}
+      />
+
+      <TaskCreateDialog
+        isOpen={taskCreateOpen}
+        onClose={() => setTaskCreateOpen(false)}
+        onCreate={handleCreateTask}
       />
     </div>
   );

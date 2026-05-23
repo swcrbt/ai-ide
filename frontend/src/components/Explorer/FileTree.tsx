@@ -4,14 +4,18 @@ import { VariableSizeList, VariableSizeList as List } from 'react-window';
 import { useExplorerStore, type FileNode } from '../../stores/useExplorerStore';
 import { FileTreeNodeRow } from './FileTreeNode';
 
-/**
- * 扁平化的树节点项
- */
+interface FileTreeProps {
+  onFileClick: (path: string) => void;
+}
+
 interface FlattenedNode {
-  /** 节点数据 */
   node: FileNode;
-  /** 节点深度 */
   depth: number;
+}
+
+interface FileTreeRowData {
+  nodes: FlattenedNode[];
+  onFileClick: (path: string) => void;
 }
 
 /**
@@ -32,28 +36,19 @@ function flattenTree(nodes: FileNode[], expandedPaths: Set<string>, depth = 0): 
   return result;
 }
 
-/**
- * 文件树行组件（用于 react-window VariableSizeList）
- */
 const FileTreeRow: React.FC<any> = ({ index, style, data }) => {
-  const item = data[index] as FlattenedNode | undefined;
+  const rowData = data as FileTreeRowData;
+  const item = rowData.nodes[index] as FlattenedNode | undefined;
   if (!item) return null;
 
   return (
     <div style={style}>
-      <FileTreeNodeRow node={item.node} depth={item.depth} />
+      <FileTreeNodeRow node={item.node} depth={item.depth} onFileClick={rowData.onFileClick} />
     </div>
   );
 };
 
-/**
- * 文件树虚拟滚动组件
- *
- * 使用 react-window 实现虚拟滚动，只渲染可视区域的文件节点。
- * 支持动态高度（目录展开/折叠时重新计算列表）。
- * 当文件数量超过 100 时自动启用虚拟滚动，否则使用普通渲染。
- */
-export function FileTree() {
+export function FileTree({ onFileClick }: FileTreeProps) {
   const {
     treeData,
     isLoading,
@@ -86,7 +81,7 @@ export function FileTree() {
   }, [expandedPaths, enableVirtualization]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-sidebar text-sidebar-fg border-r border-sidebar-border">
+    <div className="flex flex-col h-full w-full bg-sidebar text-sidebar-fg">
       {/* 头部工具栏 */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
@@ -124,7 +119,7 @@ export function FileTree() {
             ref={listRef}
             itemCount={nodeCount}
             itemSize={() => ITEM_HEIGHT}
-            itemData={flattenedNodes}
+            itemData={{ nodes: flattenedNodes, onFileClick }}
             height={containerRef.current?.clientHeight || 600}
             width="100%"
             overscanCount={5}
@@ -134,7 +129,7 @@ export function FileTree() {
         ) : (
           // 普通渲染模式（小项目）
           treeData.map((node) => (
-            <FileTreeNodeRow key={node.path} node={node} depth={0} />
+            <FileTreeNodeRow key={node.path} node={node} depth={0} onFileClick={onFileClick} />
           ))
         )}
       </div>

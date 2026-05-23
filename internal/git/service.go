@@ -365,6 +365,58 @@ func (s *GitService) Checkout(branch string) error {
 	return nil
 }
 
+// CreateBranch 创建并切换到新分支
+func (s *GitService) CreateBranch(branch string) error {
+	if s.repoPath == "" {
+		return fmt.Errorf("未设置仓库路径")
+	}
+
+	if strings.TrimSpace(branch) == "" {
+		return fmt.Errorf("分支名称不能为空")
+	}
+
+	// 先检查分支是否已存在
+	exists, err := s.BranchExists(branch)
+	if err != nil {
+		return fmt.Errorf("检查分支失败: %w", err)
+	}
+
+	if exists {
+		return fmt.Errorf("分支已存在: %s", branch)
+	}
+
+	_, err = s.runGitCommand("checkout", "-b", branch)
+	if err != nil {
+		return fmt.Errorf("创建分支失败: %w", err)
+	}
+	return nil
+}
+
+// BranchExists 检查分支是否存在
+func (s *GitService) BranchExists(branch string) (bool, error) {
+	if s.repoPath == "" {
+		return false, fmt.Errorf("未设置仓库路径")
+	}
+
+	if strings.TrimSpace(branch) == "" {
+		return false, fmt.Errorf("分支名称不能为空")
+	}
+
+	// 获取所有分支列表
+	branches, err := s.Branches()
+	if err != nil {
+		return false, err
+	}
+
+	for _, b := range branches {
+		if b.Name == branch {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // Log 获取提交历史
 func (s *GitService) Log(limit int) ([]GitCommit, error) {
 	if s.repoPath == "" {

@@ -9,6 +9,7 @@ const mockToggleNode = vi.fn();
 const mockSelectNode = vi.fn();
 const mockExpandNode = vi.fn();
 const mockCollapseNode = vi.fn();
+const mockOnFileClick = vi.fn();
 const mockOpenFile = vi.fn();
 const mockPerformOperation = vi.fn();
 
@@ -97,7 +98,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
@@ -109,7 +110,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(mockLoadTree).toHaveBeenCalledTimes(1);
     });
@@ -123,7 +124,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.getByText('暂无文件')).toBeInTheDocument();
       expect(screen.getByText('项目目录为空或加载失败')).toBeInTheDocument();
@@ -139,7 +140,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.getByText('my-awesome-project')).toBeInTheDocument();
     });
@@ -154,7 +155,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.getByText('README.md')).toBeInTheDocument();
       expect(screen.getByText('package.json')).toBeInTheDocument();
@@ -171,7 +172,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.getByText('src')).toBeInTheDocument();
     });
@@ -194,7 +195,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.getByText('modified.ts')).toBeInTheDocument();
       expect(screen.getByText('added.ts')).toBeInTheDocument();
@@ -202,7 +203,7 @@ describe('FileTree', () => {
   });
 
   describe('点击文件', () => {
-    it('点击文件应调用 selectNode 和 openFile', () => {
+    it('点击文件应调用 selectNode 和 onFileClick', () => {
       setMockExplorerState({
         treeData: [
           createMockFileNode({ name: 'App.tsx', path: '/project/src/App.tsx' }),
@@ -211,13 +212,13 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       const fileNode = screen.getByText('App.tsx');
       fireEvent.click(fileNode);
 
       expect(mockSelectNode).toHaveBeenCalledWith('/project/src/App.tsx');
-      expect(mockOpenFile).toHaveBeenCalledWith('/project/src/App.tsx', '');
+      expect(mockOnFileClick).toHaveBeenCalledWith('/project/src/App.tsx');
     });
 
     it('点击文件应高亮选中状态', () => {
@@ -230,7 +231,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       const fileRow = screen.getByText('App.tsx').closest('div');
       expect(fileRow).toHaveClass('bg-accent');
@@ -249,7 +250,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       const dirNode = screen.getByText('src');
       fireEvent.click(dirNode);
@@ -268,7 +269,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       const expandButton = screen.getByText('src').closest('div')?.querySelector('button');
       expect(expandButton).toBeInTheDocument();
@@ -290,7 +291,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       expect(screen.queryByText('App.tsx')).not.toBeInTheDocument();
     });
@@ -304,7 +305,7 @@ describe('FileTree', () => {
       });
       setMockEditorState();
 
-      render(<FileTree />);
+      render(<FileTree onFileClick={mockOnFileClick} />);
 
       const refreshButton = screen.getByTitle('刷新');
       fireEvent.click(refreshButton);

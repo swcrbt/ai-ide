@@ -64,13 +64,6 @@ export function Terminal({ theme }: TerminalProps) {
     // 初始适配大小
     fitAddon.fit();
 
-    // 通知后端终端已就绪，触发 shell 启动
-    EventsEmit(EVENT_READY);
-
-    // 通知后端当前终端大小
-    const dims = term.cols + ',' + term.rows;
-    EventsEmit(EVENT_RESIZE, term.cols, term.rows);
-
     // 监听用户输入并发送到后端
     term.onData((data: string) => {
       // 使用 base64 编码发送，避免特殊字符问题
@@ -92,6 +85,13 @@ export function Terminal({ theme }: TerminalProps) {
     EventsOn(EVENT_CLOSED, () => {
       term.writeln('\r\n\x1b[31m[终端已关闭]\x1b[0m');
     });
+
+    // 延迟通知后端终端已就绪，确保 EventsOn 监听器已注册
+    // 避免后端 terminal:output 事件因前端未就绪而丢失
+    setTimeout(() => {
+      EventsEmit(EVENT_READY);
+      EventsEmit(EVENT_RESIZE, term.cols, term.rows);
+    }, 100);
 
     // 使用 ResizeObserver 监听容器大小变化
     resizeObserverRef.current = new ResizeObserver(() => {

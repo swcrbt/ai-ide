@@ -4,11 +4,15 @@ import {git} from '../models';
 
 export function Branch():Promise<string>;
 
+export function BranchExists(arg1:string):Promise<boolean>;
+
 export function Branches():Promise<Array<git.GitBranch>>;
 
 export function Checkout(arg1:string):Promise<void>;
 
 export function Commit(arg1:string):Promise<void>;
+
+export function CreateBranch(arg1:string):Promise<void>;
 
 export function Diff(arg1:string,arg2:boolean):Promise<git.GitDiff>;
 

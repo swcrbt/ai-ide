@@ -6,6 +6,10 @@ export function Branch() {
   return window['go']['git']['GitService']['Branch']();
 }
 
+export function BranchExists(arg1) {
+  return window['go']['git']['GitService']['BranchExists'](arg1);
+}
+
 export function Branches() {
   return window['go']['git']['GitService']['Branches']();
 }
@@ -16,6 +20,10 @@ export function Checkout(arg1) {
 
 export function Commit(arg1) {
   return window['go']['git']['GitService']['Commit'](arg1);
+}
+
+export function CreateBranch(arg1) {
+  return window['go']['git']['GitService']['CreateBranch'](arg1);
 }
 
 export function Diff(arg1, arg2) {
