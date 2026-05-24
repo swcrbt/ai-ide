@@ -28,6 +28,8 @@ import { StatusBar } from './components/Layout/StatusBar';
 import { FileTree } from './components/Explorer/FileTree';
 import { SearchPanel } from './components/Search/SearchPanel';
 import { ChatPanel } from './components/Chat/ChatPanel';
+import { ConsolePanel } from './components/Console/ConsolePanel';
+import { useConsoleStore } from './stores/useConsoleStore';
 import { TaskCard } from './components/Task/TaskCard';
 import { TaskCreateDialog } from './components/Task/TaskCreateDialog';
 import { BranchExists, CreateBranch } from './types/wails';
@@ -51,7 +53,7 @@ function LoadingFallback({ message = '加载中...' }: { message?: string }) {
 
 
 type LeftTab = 'task' | 'git';
-type BottomTab = 'terminal' | 'ai';
+type BottomTab = 'terminal' | 'ai' | 'console';
 
 const themeCycle: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
 
@@ -114,6 +116,90 @@ function App() {
   const showAppToast = useCallback((message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 2000);
+  }, []);
+
+  // 安装 console 劫持（仅一次）
+  useEffect(() => {
+    const store = useConsoleStore.getState();
+
+    // 序列化参数（安全处理循环引用和 Symbol）
+    function safeStringify(value: unknown): string {
+      try {
+        if (value === null) return 'null';
+        if (value === undefined) return 'undefined';
+        if (typeof value === 'object') {
+          return JSON.stringify(value);
+        }
+        return String(value);
+      } catch {
+        return '[无法序列化]';
+      }
+    }
+
+    // 劫持 console 方法
+    const methods = ['log', 'error', 'warn', 'info', 'debug'] as const;
+    const originals: Record<string, (...args: unknown[]) => void> = {};
+
+    methods.forEach((method) => {
+      originals[method] = (console as Record<string, (...args: unknown[]) => void>)[method];
+
+      (console as Record<string, (...args: unknown[]) => void>)[method] = (...args: unknown[]) => {
+        // 调用原始方法
+        originals[method](...args);
+
+        // 推送条目
+        const message = args.map(safeStringify).join(' ');
+        store.addEntry({
+          level: method,
+          message: message.length > 500 ? message.slice(0, 500) + '...' : message,
+          timestamp: Date.now(),
+          source: 'console',
+          args,
+        });
+      };
+    });
+
+    // 捕获未处理的同步异常
+    const prevOnError = window.onerror;
+    window.onerror = (msg, url, line, col, error) => {
+      store.addEntry({
+        level: 'error',
+        message: error instanceof Error
+          ? `${error.name}: ${error.message} (${url}:${line}:${col})`
+          : `${String(msg)} (${url}:${line}:${col})`,
+        timestamp: Date.now(),
+        source: 'error',
+        args: [error],
+      });
+      if (prevOnError) {
+        prevOnError.call(window, msg, url, line, col, error);
+      }
+      return false;
+    };
+
+    // 捕获未处理的 Promise 拒绝
+    const prevOnUnhandled = window.onunhandledrejection;
+    window.onunhandledrejection = (event) => {
+      store.addEntry({
+        level: 'error',
+        message: `未处理的 Promise 拒绝: ${safeStringify(event.reason)}`,
+        timestamp: Date.now(),
+        source: 'unhandledrejection',
+        args: [event.reason],
+      });
+      if (prevOnUnhandled) {
+        prevOnUnhandled.call(window, event);
+      }
+    };
+
+    // 清理函数（恢复原始方法）
+    return () => {
+      methods.forEach((method) => {
+        (console as Record<string, (...args: unknown[]) => void>)[method] = originals[method];
+      });
+      window.onerror = prevOnError;
+      window.onunhandledrejection = prevOnUnhandled;
+    };
   }, []);
 
   useEffect(() => {
@@ -593,6 +679,7 @@ function App() {
                 <Terminal theme={resolvedTheme} />
               </Suspense>
             ),
+            console: <ConsolePanel />,
             aiChat: <ChatPanel />,
           }}
         </BottomPanel>
