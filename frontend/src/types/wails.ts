@@ -174,3 +174,22 @@ export { Summary } from '../../wailsjs/go/git/GitService';
 
 /** 取消暂存文件 */
 export { Unstage } from '../../wailsjs/go/git/GitService';
+
+// ---------------------------------------------------------------------------
+// Project 服务函数 / Project Service Functions
+// ---------------------------------------------------------------------------
+
+/** 获取项目列表 */
+export { ListProjects } from '../../wailsjs/go/project/ProjectService';
+
+/** 添加项目 */
+export { AddProject } from '../../wailsjs/go/project/ProjectService';
+
+/** 初始化 Git 并保存项目 */
+export { InitGitAndSave } from '../../wailsjs/go/project/ProjectService';
+
+/** 删除项目 */
+export { RemoveProject } from '../../wailsjs/go/project/ProjectService';
+
+/** 设置当前项目 */
+export { SetCurrentProject } from '../../wailsjs/go/project/ProjectService';
