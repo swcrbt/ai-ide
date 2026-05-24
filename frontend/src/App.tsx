@@ -30,6 +30,7 @@ import { ChatPanel } from './components/Chat/ChatPanel';
 import { TaskCard } from './components/Task/TaskCard';
 import { TaskCreateDialog } from './components/Task/TaskCreateDialog';
 import { BranchExists, CreateBranch } from './types/wails';
+import { ReadFile } from '../wailsjs/go/fs/FileService';
 
 // 动态导入大型组件，减少初始加载时间
 const Editor = lazy(() => import('./components/Editor/Editor'));
@@ -46,79 +47,7 @@ function LoadingFallback({ message = '加载中...' }: { message?: string }) {
   );
 }
 
-const demoFiles = [
-  {
-    path: 'src/main.ts',
-    content: `import { app, BrowserWindow } from 'electron';
-import path from 'path';
 
-function createWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
-
-  mainWindow.loadFile('index.html');
-}
-
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});`,
-    language: 'typescript',
-  },
-  {
-    path: 'src/utils/helper.js',
-    content: `export function formatDate(date) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
-
-export function debounce(fn, delay) {
-  let timer = null;
-  return function (...args) {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
-}`,
-    language: 'javascript',
-  },
-  {
-    path: 'package.json',
-    content: `{
-  "name": "ai-ide",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "zustand": "^5.0.13"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.3",
-    "vite": "^3.0.7"
-  }
-}`,
-    language: 'json',
-  },
-];
 
 type LeftTab = 'task' | 'git';
 type BottomTab = 'terminal' | 'ai';
@@ -213,7 +142,7 @@ function App() {
     });
 
     registerHandler('file.open', () => {
-      handleOpenDemoFile(0);
+      showAppToast('请从文件资源管理器中选择文件');
     });
 
     registerHandler('file.closeTab', () => {
@@ -381,7 +310,9 @@ function App() {
         showAppToast(`已保存: ${activeTab}`);
       }
     });
-    handlerMap.set('file.open', () => handleOpenDemoFile(0));
+    handlerMap.set('file.open', () => {
+      showAppToast('请从文件资源管理器中选择文件');
+    });
     handlerMap.set('file.closeTab', () => {
       if (activeTab) closeFile(activeTab);
     });
@@ -447,12 +378,6 @@ function App() {
     i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh');
   }
 
-  function handleOpenDemoFile(index: number) {
-    const file = demoFiles[index];
-    openFile(file.path, file.content, file.language);
-    setActiveFile(file.path);
-  }
-
   async function handleCreateTask(task: {
     title: string;
     branch: string;
@@ -486,13 +411,7 @@ function App() {
     initTheme();
   }, []);
 
-  useEffect(() => {
-    if (tabs.length === 0) {
-      const file = demoFiles[0];
-      openFile(file.path, file.content, file.language);
-      setActiveFile(file.path);
-    }
-  }, []);
+
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -598,14 +517,14 @@ function App() {
         </LeftPanel>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          {activeFile ? (
+          {activeTab ? (
             <LSPProvider>
               <Suspense fallback={<LoadingFallback message="编辑器加载中..." />}>
                 <Editor />
               </Suspense>
             </LSPProvider>
           ) : (
-            <ChatPanel />
+            <ChatPanel centered />
           )}
         </main>
 
@@ -616,7 +535,17 @@ function App() {
           onToolChange={setRightTool}
         >
           {{
-            explorer: <FileTree onFileClick={(path) => openFile(path, '')} />,
+            explorer: <FileTree onFileClick={async (path) => {
+              try {
+                const bytes = await ReadFile(path);
+                const content = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+                openFile(path, content);
+                setActiveFile(path);
+              } catch (err) {
+                console.error('读取文件失败:', err);
+                showAppToast(`读取文件失败: ${err}`);
+              }
+            }} />,
           }}
         </RightPanel>
       </div>

@@ -77,11 +77,6 @@ func (p *PTY) Start(shell string) error {
 	// 设置环境变量
 	p.cmd.Env = os.Environ()
 
-	// 在 macOS 上设置进程组，确保子进程能正确接收信号
-	p.cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
 	// 启动 PTY
 	ptyFile, err := pty.Start(p.cmd)
 	if err != nil {

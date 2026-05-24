@@ -12,6 +12,9 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  RefreshCw,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from 'lucide-react';
 
 type DiffLineType = 'add' | 'del' | 'context' | 'header';
@@ -130,14 +133,19 @@ export function GitPanel() {
   const {
     status,
     summary,
+    currentBranch,
     isLoading,
     isCommitting,
+    isPushing,
+    isPulling,
     commitMessage,
     diffContent,
     selectedFile,
     stageFiles,
     unstageFiles,
     commit,
+    push,
+    pull,
     loadStatus,
     loadDiff,
     setCommitMessage,
@@ -195,8 +203,50 @@ export function GitPanel() {
     );
   }
 
+  const displayBranch = currentBranch || (status?.branch) || 'main';
+
   return (
     <div className="flex flex-col flex-1 bg-background">
+      {/* 分支信息和操作栏 */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-secondary/30">
+        <div className="flex items-center gap-2">
+          <GitBranch size={14} className="text-primary" />
+          <span className="text-sm font-medium text-foreground">{displayBranch}</span>
+          {summary && summary.ahead > 0 && (
+            <span className="text-xs text-muted-foreground">↑{summary.ahead}</span>
+          )}
+          {summary && summary.behind > 0 && (
+            <span className="text-xs text-muted-foreground">↓{summary.behind}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => loadStatus()}
+            disabled={isLoading}
+            className="p-1.5 rounded hover:bg-accent transition-colors disabled:opacity-50"
+            title="刷新"
+          >
+            <RefreshCw size={14} className={`text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={pull}
+            disabled={isPulling}
+            className="p-1.5 rounded hover:bg-accent transition-colors disabled:opacity-50"
+            title="拉取"
+          >
+            <ArrowDownToLine size={14} className="text-muted-foreground" />
+          </button>
+          <button
+            onClick={push}
+            disabled={isPushing}
+            className="p-1.5 rounded hover:bg-accent transition-colors disabled:opacity-50"
+            title="推送"
+          >
+            <ArrowUpFromLine size={14} className="text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+
       <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab('changes')}

@@ -4,7 +4,11 @@ import {config} from '../models';
 
 export function BranchExists(arg1:string):Promise<boolean>;
 
+export function ClearChatMessages(arg1:string):Promise<void>;
+
 export function CreateBranch(arg1:string):Promise<void>;
+
+export function CreateChatSession():Promise<string>;
 
 export function GetSettings():Promise<config.Settings>;
 
@@ -13,3 +17,5 @@ export function Greet(arg1:string):Promise<string>;
 export function ResetSettings():Promise<void>;
 
 export function SaveSettings(arg1:config.Settings):Promise<void>;
+
+export function SendChatMessage(arg1:string,arg2:string):Promise<void>;

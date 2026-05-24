@@ -51,7 +51,8 @@ export function MessageInput({ onSend, isCompact = false }: MessageInputProps) {
 
   return (
     <div className={`border-t border-border bg-background ${isCompact ? 'p-2' : 'p-3'}`}>
-      <div className={`flex items-end gap-2 rounded-lg border border-border bg-muted/50 ${isCompact ? 'p-1.5' : 'p-2'}`}>
+      <div className="max-w-3xl mx-auto" data-testid="message-input-container">
+        <div className={`flex items-end gap-2 rounded-lg border border-border bg-muted/50 ${isCompact ? 'p-1.5' : 'p-2'}`}>
         <textarea
           ref={textareaRef}
           value={inputText}
@@ -89,6 +90,7 @@ export function MessageInput({ onSend, isCompact = false }: MessageInputProps) {
           </span>
         </div>
       )}
+      </div>
     </div>
   );
 }

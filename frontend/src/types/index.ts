@@ -45,8 +45,8 @@ export interface AISettings {
 
 // 应用全局配置
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
-  language: 'zh' | 'en';
+  theme: string;
+  language: string;
   autoSave: boolean;
   editor: EditorSettings;
   terminal: TerminalSettings;

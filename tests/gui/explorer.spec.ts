@@ -19,8 +19,8 @@ test.describe('File Explorer', () => {
   });
 
   test('侧边栏应该可见', async ({ page }) => {
-    // 侧边栏包含"资源管理器"标题
-    const sidebar = page.locator('aside').filter({ hasText: '资源管理器' });
+    // 右侧文件资源管理器面板
+    const sidebar = page.locator('.bg-sidebar').filter({ hasText: 'ai-ide' });
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     await page.screenshot({
@@ -30,15 +30,12 @@ test.describe('File Explorer', () => {
 
   test('文件树应该渲染', async ({ page }) => {
     // 等待文件树内容渲染
-    await page.waitForSelector('aside', { timeout: 10000 });
+    const fileTreeContainer = page.locator('.bg-sidebar');
+    await expect(fileTreeContainer).toBeVisible({ timeout: 10000 });
 
     // 检查是否有文件夹和文件显示
-    const fileTreeContent = page.locator('aside').filter({ hasText: 'src' });
-    await expect(fileTreeContent).toBeVisible({ timeout: 10000 });
-
-    // 检查具体的文件和文件夹项
     const srcFolder = page.locator('text=src').first();
-    await expect(srcFolder).toBeVisible();
+    await expect(srcFolder).toBeVisible({ timeout: 10000 });
 
     await page.screenshot({
       path: 'test-results/screenshots/explorer-file-tree-rendered.png',
@@ -46,21 +43,19 @@ test.describe('File Explorer', () => {
   });
 
   test('点击文件应该打开编辑器标签', async ({ page }) => {
-    // 左侧工具栏有打开演示文件的按钮
-    const openMainButton = page.locator('button[title="打开 main.ts"]').first();
-    await expect(openMainButton).toBeVisible({ timeout: 10000 });
-
-    // 点击打开 main.ts
-    await openMainButton.click();
+    // 点击根级别的 package.json 文件
+    const packageJsonNode = page.locator('text=package.json').first();
+    await expect(packageJsonNode).toBeVisible({ timeout: 10000 });
+    await packageJsonNode.click();
     await page.waitForTimeout(500);
 
-    // 检查编辑器标签栏是否显示 main.ts
+    // 检查编辑器标签栏是否显示 package.json
     const tabBar = page.locator('.scrollbar-hide');
     await expect(tabBar).toBeVisible();
 
-    // 检查是否有 main.ts 标签
-    const mainTab = page.locator('text=main.ts');
-    await expect(mainTab).toBeVisible();
+    // 检查是否有 package.json 标签
+    const packageTab = page.locator('text=package.json').first();
+    await expect(packageTab).toBeVisible();
 
     await page.screenshot({
       path: 'test-results/screenshots/explorer-click-opens-file.png',
@@ -69,7 +64,7 @@ test.describe('File Explorer', () => {
 
   test('侧边栏应该可以折叠和展开', async ({ page }) => {
     // 找到资源管理器侧边栏
-    const sidebar = page.locator('aside').filter({ hasText: '资源管理器' });
+    const sidebar = page.locator('.bg-sidebar');
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // 记录侧边栏初始状态

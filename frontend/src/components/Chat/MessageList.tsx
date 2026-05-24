@@ -69,9 +69,9 @@ function MessageBubble({ message }: { message: Message }) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-4">
-        <div className="flex items-start gap-2 max-w-[85%]">
-          <div className="flex flex-col items-end">
+      <div className="flex justify-end mb-4" data-testid="message-bubble">
+        <div className="flex items-start gap-2 max-w-3xl w-full">
+          <div className="flex flex-col items-end ml-auto">
             <div className="rounded-2xl rounded-tr-sm px-4 py-2.5 bg-primary text-primary-foreground">
               <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                 {message.content}
@@ -93,8 +93,8 @@ function MessageBubble({ message }: { message: Message }) {
   }
 
   return (
-    <div className="flex justify-start mb-4">
-      <div className="flex items-start gap-2 max-w-[90%]">
+    <div className="flex justify-start mb-4" data-testid="message-bubble">
+      <div className="flex items-start gap-2 max-w-3xl w-full">
         <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center flex-shrink-0 mt-1">
           <Bot size={14} className="text-accent-foreground" />
         </div>

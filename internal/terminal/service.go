@@ -180,11 +180,16 @@ func (s *TerminalService) forwardOutput(pty *PTY) {
 	for data := range outputChan {
 		// 使用 base64 编码避免 JSON 序列化问题
 		encoded := base64.StdEncoding.EncodeToString(data)
-		wailsRuntime.EventsEmit(s.ctx, EventTerminalOutput, encoded)
+		// 仅在有效的 Wails 上下文中发送事件（测试环境中 ctx 可能为 nil）
+		if s.ctx != nil {
+			wailsRuntime.EventsEmit(s.ctx, EventTerminalOutput, encoded)
+		}
 	}
 
 	// 输出通道关闭，发送关闭事件
-	wailsRuntime.EventsEmit(s.ctx, EventTerminalClosed)
+	if s.ctx != nil {
+		wailsRuntime.EventsEmit(s.ctx, EventTerminalClosed)
+	}
 }
 
 // StopTerminal 停止当前终端会话

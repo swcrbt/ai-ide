@@ -6,8 +6,16 @@ export function BranchExists(arg1) {
   return window['go']['main']['App']['BranchExists'](arg1);
 }
 
+export function ClearChatMessages(arg1) {
+  return window['go']['main']['App']['ClearChatMessages'](arg1);
+}
+
 export function CreateBranch(arg1) {
   return window['go']['main']['App']['CreateBranch'](arg1);
+}
+
+export function CreateChatSession() {
+  return window['go']['main']['App']['CreateChatSession']();
 }
 
 export function GetSettings() {
@@ -24,4 +32,8 @@ export function ResetSettings() {
 
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
+}
+
+export function SendChatMessage(arg1, arg2) {
+  return window['go']['main']['App']['SendChatMessage'](arg1, arg2);
 }

@@ -144,151 +144,7 @@ export function isLanguageSupported(language: string): boolean {
   return language in LANGUAGE_SERVER_MAP;
 }
 
-// ============================================================
-// 模拟数据（用于测试，当后端绑定不可用时）
-// ============================================================
 
-/** Go 语言模拟补全数据 */
-const GO_MOCK_COMPLETIONS: LSPCompletionItem[] = [
-  { label: 'fmt', kind: LSPCompletionItemKind.Module, detail: 'package fmt', documentation: '格式化输入输出包' },
-  { label: 'fmt.Println', kind: LSPCompletionItemKind.Function, detail: 'func(...interface{})', insertText: 'fmt.Println($0)', documentation: '打印并换行' },
-  { label: 'fmt.Printf', kind: LSPCompletionItemKind.Function, detail: 'func(string, ...interface{})', insertText: 'fmt.Printf("$0")', documentation: '格式化打印' },
-  { label: 'func', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'func $0() {\n\t\n}', documentation: '定义函数' },
-  { label: 'package', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '定义包名' },
-  { label: 'import', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'import "$0"', documentation: '导入包' },
-  { label: 'struct', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'struct {\n\t$0\n}', documentation: '定义结构体' },
-  { label: 'interface', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'interface {\n\t$0\n}', documentation: '定义接口' },
-  { label: 'return', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '返回语句' },
-  { label: 'if', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'if $0 {\n\t\n}', documentation: '条件语句' },
-  { label: 'for', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'for $0 {\n\t\n}', documentation: '循环语句' },
-  { label: 'range', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '范围迭代' },
-  { label: 'make', kind: LSPCompletionItemKind.Function, detail: 'builtin', insertText: 'make($0)', documentation: '创建切片、映射或通道' },
-  { label: 'len', kind: LSPCompletionItemKind.Function, detail: 'builtin', insertText: 'len($0)', documentation: '获取长度' },
-  { label: 'append', kind: LSPCompletionItemKind.Function, detail: 'builtin', insertText: 'append($0)', documentation: '追加元素到切片' },
-];
-
-/** TypeScript 模拟补全数据 */
-const TS_MOCK_COMPLETIONS: LSPCompletionItem[] = [
-  { label: 'console', kind: LSPCompletionItemKind.Variable, detail: 'Console', documentation: '控制台对象' },
-  { label: 'console.log', kind: LSPCompletionItemKind.Method, detail: 'method', insertText: 'console.log($0)', documentation: '输出日志' },
-  { label: 'const', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '声明常量' },
-  { label: 'let', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '声明变量' },
-  { label: 'function', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'function $0() {\n\t\n}', documentation: '定义函数' },
-  { label: 'interface', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'interface $0 {\n\t\n}', documentation: '定义接口' },
-  { label: 'type', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'type $0 = ', documentation: '定义类型别名' },
-  { label: 'import', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'import { $0 } from ""', documentation: '导入模块' },
-  { label: 'export', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '导出模块' },
-  { label: 'return', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '返回语句' },
-  { label: 'async', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '异步函数修饰符' },
-  { label: 'await', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '等待 Promise' },
-  { label: 'Promise', kind: LSPCompletionItemKind.Class, detail: 'Promise<T>', insertText: 'Promise<$0>', documentation: 'Promise 对象' },
-  { label: 'Array', kind: LSPCompletionItemKind.Class, detail: 'Array<T>', insertText: 'Array<$0>', documentation: '数组类型' },
-  { label: 'string', kind: LSPCompletionItemKind.TypeParameter, detail: '基本类型', documentation: '字符串类型' },
-  { label: 'number', kind: LSPCompletionItemKind.TypeParameter, detail: '基本类型', documentation: '数字类型' },
-  { label: 'boolean', kind: LSPCompletionItemKind.TypeParameter, detail: '基本类型', documentation: '布尔类型' },
-];
-
-/** Python 模拟补全数据 */
-const PY_MOCK_COMPLETIONS: LSPCompletionItem[] = [
-  { label: 'print', kind: LSPCompletionItemKind.Function, detail: 'builtin', insertText: 'print($0)', documentation: '打印输出' },
-  { label: 'len', kind: LSPCompletionItemKind.Function, detail: 'builtin', insertText: 'len($0)', documentation: '获取长度' },
-  { label: 'range', kind: LSPCompletionItemKind.Function, detail: 'builtin', insertText: 'range($0)', documentation: '生成整数序列' },
-  { label: 'def', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'def $0():\n    pass', documentation: '定义函数' },
-  { label: 'class', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'class $0:\n    pass', documentation: '定义类' },
-  { label: 'import', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'import $0', documentation: '导入模块' },
-  { label: 'from', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'from $0 import ', documentation: '从模块导入' },
-  { label: 'return', kind: LSPCompletionItemKind.Keyword, detail: '关键字', documentation: '返回语句' },
-  { label: 'if', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'if $0:\n    pass', documentation: '条件语句' },
-  { label: 'for', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'for $0 in :\n    pass', documentation: '循环语句' },
-  { label: 'while', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'while $0:\n    pass', documentation: 'while 循环' },
-  { label: 'try', kind: LSPCompletionItemKind.Keyword, detail: '关键字', insertText: 'try:\n    $0\nexcept Exception as e:\n    pass', documentation: '异常处理' },
-  { label: 'list', kind: LSPCompletionItemKind.Class, detail: 'builtin', insertText: 'list($0)', documentation: '列表类型' },
-  { label: 'dict', kind: LSPCompletionItemKind.Class, detail: 'builtin', insertText: 'dict($0)', documentation: '字典类型' },
-  { label: 'str', kind: LSPCompletionItemKind.Class, detail: 'builtin', insertText: 'str($0)', documentation: '字符串类型' },
-  { label: 'int', kind: LSPCompletionItemKind.Class, detail: 'builtin', insertText: 'int($0)', documentation: '整数类型' },
-];
-
-/** 获取模拟补全数据 */
-function getMockCompletions(language: string): LSPCompletionItem[] {
-  switch (language) {
-    case 'go':
-      return GO_MOCK_COMPLETIONS;
-    case 'typescript':
-    case 'javascript':
-      return TS_MOCK_COMPLETIONS;
-    case 'python':
-      return PY_MOCK_COMPLETIONS;
-    default:
-      return [];
-  }
-}
-
-/** 模拟诊断数据 */
-function getMockDiagnostics(uri: string, language: string): LSPDiagnostic[] {
-  const diagnostics: LSPDiagnostic[] = [];
-
-  // 仅对部分 URI 返回模拟诊断
-  if (uri.includes('error')) {
-    diagnostics.push({
-      range: {
-        start: { line: 0, character: 0 },
-        end: { line: 0, character: 10 },
-      },
-      severity: LSPDiagnosticSeverity.Error,
-      message: '模拟错误: 语法错误',
-      source: 'lsp-mock',
-    });
-  }
-
-  if (language === 'go' && uri.includes('main')) {
-    diagnostics.push({
-      range: {
-        start: { line: 1, character: 0 },
-        end: { line: 1, character: 20 },
-      },
-      severity: LSPDiagnosticSeverity.Warning,
-      message: '未使用的导入',
-      source: 'gopls-mock',
-    });
-  }
-
-  return diagnostics;
-}
-
-/** 模拟定义跳转数据 */
-function getMockDefinition(uri: string, _position: LSPPosition): LSPLocation[] {
-  // 返回当前文件内的模拟定义位置
-  return [
-    {
-      uri,
-      range: {
-        start: { line: 0, character: 0 },
-        end: { line: 0, character: 10 },
-      },
-    },
-  ];
-}
-
-/** 模拟引用查找数据 */
-function getMockReferences(uri: string, _position: LSPPosition): LSPLocation[] {
-  // 返回当前文件内的模拟引用位置
-  return [
-    {
-      uri,
-      range: {
-        start: { line: 0, character: 0 },
-        end: { line: 0, character: 10 },
-      },
-    },
-    {
-      uri,
-      range: {
-        start: { line: 2, character: 5 },
-        end: { line: 2, character: 15 },
-      },
-    },
-  ];
-}
 
 // ============================================================
 // LSP 服务类
@@ -312,8 +168,6 @@ export class LSPService {
   private workspacePath = '';
   /** 当前语言 */
   private currentLanguage = '';
-  /** 是否使用模拟数据 */
-  private useMock = true;
   /** 事件监听器清理函数 */
   private eventCleanup?: () => void;
 
@@ -346,15 +200,13 @@ export class LSPService {
     this.currentLanguage = language;
 
     // 检查后端是否可用
-    this.useMock = !(await this.checkBackendAvailable());
-
-    if (this.useMock) {
-      console.log(`[LSP] 使用模拟模式: ${language}`);
-      this.state = LSPClientState.Running;
-      return true;
+    const backendAvailable = await this.checkBackendAvailable();
+    if (!backendAvailable) {
+      console.warn(`[LSP] 后端不可用，无法初始化: ${language}`);
+      this.state = LSPClientState.Stopped;
+      return false;
     }
 
-    // 真实后端模式
     try {
       const config = getLanguageServerConfig(language);
       if (!config) {
@@ -374,9 +226,7 @@ export class LSPService {
     } catch (error) {
       console.error('[LSP] 初始化失败:', error);
       this.state = LSPClientState.Stopped;
-      this.useMock = true;
-      this.state = LSPClientState.Running;
-      return true;
+      return false;
     }
   }
 
@@ -396,12 +246,10 @@ export class LSPService {
       this.eventCleanup = undefined;
     }
 
-    if (!this.useMock) {
-      try {
-          await wailsApp.LSPShutdown();
-      } catch (error) {
-        console.error('[LSP] 关闭失败:', error);
-      }
+    try {
+      await wailsApp.LSPShutdown();
+    } catch (error) {
+      console.error('[LSP] 关闭失败:', error);
     }
 
     this.openDocuments.clear();
@@ -445,17 +293,6 @@ export class LSPService {
     this.openDocuments.add(uri);
     this.documentVersions.set(uri, 1);
 
-    if (this.useMock) {
-      // 模拟模式下发送模拟诊断
-      const diagnostics = getMockDiagnostics(uri, language);
-      if (diagnostics.length > 0) {
-        setTimeout(() => {
-          this.notifyDiagnostics(uri, diagnostics);
-        }, 500);
-      }
-      return;
-    }
-
     try {
       await wailsApp.LSPOpenDocument(uri, language, content);
     } catch (error) {
@@ -475,10 +312,6 @@ export class LSPService {
 
     this.openDocuments.delete(uri);
     this.documentVersions.delete(uri);
-
-    if (this.useMock) {
-      return;
-    }
 
     try {
       await wailsApp.LSPCloseDocument(uri);
@@ -506,16 +339,6 @@ export class LSPService {
     const newVersion = currentVersion + 1;
     this.documentVersions.set(uri, newVersion);
 
-    if (this.useMock) {
-      // 模拟模式下更新诊断
-      const language = this.currentLanguage;
-      const diagnostics = getMockDiagnostics(uri, language);
-      setTimeout(() => {
-        this.notifyDiagnostics(uri, diagnostics);
-      }, 300);
-      return;
-    }
-
     try {
       await wailsApp.LSPChangeDocument(uri, content, newVersion);
     } catch (error) {
@@ -533,11 +356,6 @@ export class LSPService {
   async getCompletions(uri: string, position: LSPPosition): Promise<LSPCompletionList> {
     if (this.state !== LSPClientState.Running) {
       return { isIncomplete: false, items: [] };
-    }
-
-    if (this.useMock) {
-      const items = getMockCompletions(this.currentLanguage);
-      return { isIncomplete: false, items };
     }
 
     try {
@@ -561,10 +379,6 @@ export class LSPService {
       return [];
     }
 
-    if (this.useMock) {
-      return getMockDefinition(uri, position);
-    }
-
     try {
       const result = await wailsApp.LSPDefinition(uri, position.line, position.character);
       return result as LSPLocation[];
@@ -584,10 +398,6 @@ export class LSPService {
   async getReferences(uri: string, position: LSPPosition): Promise<LSPLocation[]> {
     if (this.state !== LSPClientState.Running) {
       return [];
-    }
-
-    if (this.useMock) {
-      return getMockReferences(uri, position);
     }
 
     try {

@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import {
+  GetFileTree,
+  CreateFile,
+  DeleteFile,
+  RenameFile,
+} from '../../wailsjs/go/fs/FileService';
 
 /**
  * Git 文件状态类型
@@ -71,216 +77,10 @@ interface ExplorerState {
 }
 
 /**
- * 生成模拟文件树数据
- */
-function generateMockTree(): FileNode[] {
-  return [
-    {
-      name: 'src',
-      path: '/project/src',
-      isDir: true,
-      modTime: '2026-05-23T10:00:00Z',
-      size: 0,
-      gitStatus: null,
-      children: [
-        {
-          name: 'components',
-          path: '/project/src/components',
-          isDir: true,
-          modTime: '2026-05-23T10:00:00Z',
-          size: 0,
-          gitStatus: null,
-          children: [
-            {
-              name: 'Editor',
-              path: '/project/src/components/Editor',
-              isDir: true,
-              modTime: '2026-05-23T10:00:00Z',
-              size: 0,
-              gitStatus: null,
-              children: [
-                {
-                  name: 'Editor.tsx',
-                  path: '/project/src/components/Editor/Editor.tsx',
-                  isDir: false,
-                  modTime: '2026-05-23T10:30:00Z',
-                  size: 3456,
-                  gitStatus: 'modified',
-                },
-              ],
-            },
-            {
-              name: 'Explorer',
-              path: '/project/src/components/Explorer',
-              isDir: true,
-              modTime: '2026-05-23T11:00:00Z',
-              size: 0,
-              gitStatus: 'added',
-              children: [
-                {
-                  name: 'FileTree.tsx',
-                  path: '/project/src/components/Explorer/FileTree.tsx',
-                  isDir: false,
-                  modTime: '2026-05-23T11:00:00Z',
-                  size: 2345,
-                  gitStatus: 'added',
-                },
-                {
-                  name: 'FileTreeNode.tsx',
-                  path: '/project/src/components/Explorer/FileTreeNode.tsx',
-                  isDir: false,
-                  modTime: '2026-05-23T11:00:00Z',
-                  size: 1876,
-                  gitStatus: 'added',
-                },
-                {
-                  name: 'ContextMenu.tsx',
-                  path: '/project/src/components/Explorer/ContextMenu.tsx',
-                  isDir: false,
-                  modTime: '2026-05-23T11:00:00Z',
-                  size: 1234,
-                  gitStatus: 'added',
-                },
-              ],
-            },
-            {
-              name: 'Button.tsx',
-              path: '/project/src/components/Button.tsx',
-              isDir: false,
-              modTime: '2026-05-20T09:00:00Z',
-              size: 890,
-              gitStatus: null,
-            },
-          ],
-        },
-        {
-          name: 'stores',
-          path: '/project/src/stores',
-          isDir: true,
-          modTime: '2026-05-23T10:00:00Z',
-          size: 0,
-          gitStatus: null,
-          children: [
-            {
-              name: 'useThemeStore.ts',
-              path: '/project/src/stores/useThemeStore.ts',
-              isDir: false,
-              modTime: '2026-05-22T14:00:00Z',
-              size: 1234,
-              gitStatus: null,
-            },
-            {
-              name: 'useAppStore.ts',
-              path: '/project/src/stores/useAppStore.ts',
-              isDir: false,
-              modTime: '2026-05-22T14:00:00Z',
-              size: 1567,
-              gitStatus: null,
-            },
-            {
-              name: 'useExplorerStore.ts',
-              path: '/project/src/stores/useExplorerStore.ts',
-              isDir: false,
-              modTime: '2026-05-23T11:30:00Z',
-              size: 4567,
-              gitStatus: 'added',
-            },
-          ],
-        },
-        {
-          name: 'App.tsx',
-          path: '/project/src/App.tsx',
-          isDir: false,
-          modTime: '2026-05-23T12:00:00Z',
-          size: 2345,
-          gitStatus: 'modified',
-        },
-        {
-          name: 'main.tsx',
-          path: '/project/src/main.tsx',
-          isDir: false,
-          modTime: '2026-05-20T09:00:00Z',
-          size: 345,
-          gitStatus: null,
-        },
-      ],
-    },
-    {
-      name: 'internal',
-      path: '/project/internal',
-      isDir: true,
-      modTime: '2026-05-20T09:00:00Z',
-      size: 0,
-      gitStatus: null,
-      children: [
-        {
-          name: 'fs',
-          path: '/project/internal/fs',
-          isDir: true,
-          modTime: '2026-05-23T09:00:00Z',
-          size: 0,
-          gitStatus: null,
-          children: [
-            {
-              name: 'types.go',
-              path: '/project/internal/fs/types.go',
-              isDir: false,
-              modTime: '2026-05-23T09:00:00Z',
-              size: 1234,
-              gitStatus: null,
-            },
-            {
-              name: 'service.go',
-              path: '/project/internal/fs/service.go',
-              isDir: false,
-              modTime: '2026-05-23T09:00:00Z',
-              size: 5678,
-              gitStatus: null,
-            },
-            {
-              name: 'watcher.go',
-              path: '/project/internal/fs/watcher.go',
-              isDir: false,
-              modTime: '2026-05-23T09:00:00Z',
-              size: 3456,
-              gitStatus: null,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'package.json',
-      path: '/project/package.json',
-      isDir: false,
-      modTime: '2026-05-20T09:00:00Z',
-      size: 890,
-      gitStatus: null,
-    },
-    {
-      name: 'README.md',
-      path: '/project/README.md',
-      isDir: false,
-      modTime: '2026-05-20T09:00:00Z',
-      size: 1234,
-      gitStatus: 'deleted',
-    },
-    {
-      name: '.gitignore',
-      path: '/project/.gitignore',
-      isDir: false,
-      modTime: '2026-05-20T09:00:00Z',
-      size: 234,
-      gitStatus: 'untracked',
-    },
-  ];
-}
-
-/**
  * 文件浏览器状态管理 Store
  *
  * 管理文件树数据、展开/折叠状态、选中状态、可见性等。
- * 当前使用模拟数据，后续接入真实后端 API。
+ * 通过 Wails 后端 API 读取真实文件系统。
  */
 export const useExplorerStore = create<ExplorerState>()((set, get) => ({
   treeData: [],
@@ -295,14 +95,16 @@ export const useExplorerStore = create<ExplorerState>()((set, get) => ({
   loadTree: async (rootPath?: string) => {
     set({ isLoading: true });
     try {
-      // TODO: 后续接入真实后端调用
-      // const data = await GetFileTree(rootPath || get().rootPath);
-      // 当前使用模拟数据
-      const mockData = generateMockTree();
+      const targetPath = rootPath || get().rootPath;
+      if (!targetPath) {
+        set({ treeData: [], isLoading: false });
+        return;
+      }
+      const data = await GetFileTree(targetPath);
       set({
-        treeData: mockData,
-        rootPath: rootPath || get().rootPath,
-        projectName: rootPath ? rootPath.split('/').pop() || 'project' : get().projectName,
+        treeData: data.children || [],
+        rootPath: targetPath,
+        projectName: data.name || targetPath.split('/').pop() || targetPath,
         isLoading: false,
       });
     } catch (err) {
@@ -363,11 +165,29 @@ export const useExplorerStore = create<ExplorerState>()((set, get) => ({
     await loadTree(rootPath);
   },
 
-  /** 执行文件操作（当前为模拟实现） */
+  /** 执行文件操作 */
   performOperation: async (operation: FileOperation, targetPath: string, newName?: string) => {
-    console.log(`执行文件操作: ${operation}`, { targetPath, newName });
-    // TODO: 后续接入真实后端调用
-    // 模拟操作成功后刷新文件树
-    await get().refresh();
+    try {
+      switch (operation) {
+        case 'newFile':
+          await CreateFile(targetPath, false);
+          break;
+        case 'newFolder':
+          await CreateFile(targetPath, true);
+          break;
+        case 'rename':
+          if (newName) {
+            await RenameFile(targetPath, newName);
+          }
+          break;
+        case 'delete':
+          await DeleteFile(targetPath);
+          break;
+      }
+      await get().refresh();
+    } catch (err) {
+      console.error(`文件操作失败 (${operation}):`, err);
+      throw err;
+    }
   },
 }));

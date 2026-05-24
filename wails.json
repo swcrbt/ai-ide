@@ -9,5 +9,18 @@
   "author": {
     "name": "swcrbt",
     "email": "a916719112@163.com"
+  },
+  "info": {
+    "companyName": "swcrbt",
+    "productName": "AI IDE",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2025 swcrbt",
+    "comments": "AI驱动的集成开发环境"
+  },
+  "macos": {
+    "entitlements": "build/darwin/entitlements.plist"
+  },
+  "postBuildHooks": {
+    "darwin/*": "codesign --force --deep --sign - --entitlements /Users/swcrbt/develop/github/swcrbt/ai-ide/build/darwin/entitlements.plist ${bin}"
   }
 }

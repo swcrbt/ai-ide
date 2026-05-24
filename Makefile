@@ -214,9 +214,29 @@ clean:
 	@rm -rf $(FRONTEND_DIR)/dist/
 	@echo "$(GREEN)✓ 构建产物已清理$(RESET)"
 
+## kill-dev: 终止所有开发进程（wails、vite、serve、ai-ide GUI）
+.PHONY: kill-dev
+kill-dev:
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
+	@echo "$(GREEN)🛑 正在终止所有 ai-ide 相关进程...$(RESET)"
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
+	@echo "$(CYAN)➜ 终止 wails dev 进程...$(RESET)"
+	@-pkill -f "wails dev" 2>/dev/null || true
+	@echo "$(CYAN)➜ 终止 vite 进程...$(RESET)"
+	@-pkill -f "vite" 2>/dev/null || true
+	@echo "$(CYAN)➜ 终止 serve 进程...$(RESET)"
+	@-pkill -f "serve frontend/dist" 2>/dev/null || true
+	@echo "$(CYAN)➜ 终止 ai-ide GUI 应用...$(RESET)"
+	@-pkill -9 -f "ai-ide.app/Contents/MacOS/ai-ide" 2>/dev/null || true
+	@-killall -9 ai-ide 2>/dev/null || true
+	@echo "$(CYAN)➜ 终止 Playwright 相关进程...$(RESET)"
+	@-pkill -f "playwright" 2>/dev/null || true
+	@-pkill -f "Chromium" 2>/dev/null || true
+	@echo "$(GREEN)✓ 所有 ai-ide 相关进程已清理$(RESET)"
+
 ## clean-all: 深度清理（包括依赖）
 .PHONY: clean-all
-clean-all: clean
+clean-all: clean kill-dev
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
 	@echo "$(GREEN)🧹 正在深度清理...$(RESET)"
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"

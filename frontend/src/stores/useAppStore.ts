@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { GetSettings, SaveSettings } from '../../wailsjs/go/main/App';
+import { config } from '../../wailsjs/go/models';
 import type { AppSettings } from '../types';
 
-// 默认配置
-const defaultSettings: AppSettings = {
+// 默认配置（使用 config.Settings.createFrom 创建完整实例）
+const defaultSettings = config.Settings.createFrom({
   theme: 'system',
   language: 'zh',
   autoSave: false,
@@ -32,17 +33,16 @@ const defaultSettings: AppSettings = {
     apiKey: '',
     baseUrl: '',
   },
-};
+});
 
 interface AppState {
   isLoading: boolean;
   sidebarOpen: boolean;
   activePanel: string | null;
-  settings: AppSettings;
+  settings: config.Settings;
   setLoading: (loading: boolean) => void;
   toggleSidebar: () => void;
   setActivePanel: (panel: string | null) => void;
-  // 设置相关方法
   loadSettings: () => Promise<void>;
   saveSettings: (settings: AppSettings) => Promise<void>;
   updateSettings: (partial: Partial<AppSettings>) => void;
@@ -53,44 +53,39 @@ export const useAppStore = create<AppState>()((set, get) => ({
   isLoading: false,
   sidebarOpen: true,
   activePanel: null,
-  settings: { ...defaultSettings },
+  settings: defaultSettings,
 
   setLoading: (loading) => set({ isLoading: loading }),
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setActivePanel: (panel) => set({ activePanel: panel }),
 
-  // 从后端加载配置
   loadSettings: async () => {
     try {
-      const settingsJSON = await GetSettings();
-      const loadedSettings = JSON.parse(settingsJSON) as AppSettings;
+      const loadedSettings = await GetSettings();
       set({ settings: loadedSettings });
     } catch (err) {
       console.error('加载配置失败:', err);
-      // 加载失败时使用默认配置
-      set({ settings: { ...defaultSettings } });
+      set({ settings: config.Settings.createFrom(defaultSettings) });
     }
   },
 
-  // 保存配置到后端
   saveSettings: async (newSettings) => {
     try {
-      await SaveSettings(JSON.stringify(newSettings));
-      set({ settings: newSettings });
+      const settingsToSave = config.Settings.createFrom(newSettings);
+      await SaveSettings(settingsToSave);
+      set({ settings: settingsToSave });
     } catch (err) {
       console.error('保存配置失败:', err);
     }
   },
 
-  // 更新本地配置（不立即保存到后端）
   updateSettings: (partial) => {
     set((state) => ({
-      settings: { ...state.settings, ...partial },
+      settings: config.Settings.createFrom({ ...state.settings, ...partial }),
     }));
   },
 
-  // 重置为默认配置
   resetSettings: () => {
-    set({ settings: { ...defaultSettings } });
+    set({ settings: config.Settings.createFrom(defaultSettings) });
   },
 }));

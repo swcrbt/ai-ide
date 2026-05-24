@@ -110,6 +110,31 @@ export async function mockWailsRuntime(page: Page): Promise<void> {
           SaveSettings: () => Promise.resolve(),
           ResetSettings: () => Promise.resolve(),
           Greet: (name: string) => Promise.resolve(`Hello ${name}`),
+          CreateChatSession: () => Promise.resolve('mock-session-' + Date.now()),
+          SendChatMessage: (_sessionID: string, content: string) => {
+            // 模拟流式回复：通过 EventsEmit 分块发送
+            setTimeout(() => {
+              const mockReply = `收到你的消息: "${content}"。这是一个模拟的 AI 回复，用于测试环境。`;
+              const chunks = mockReply.split('');
+              let idx = 0;
+              const interval = setInterval(() => {
+                if (idx >= chunks.length) {
+                  clearInterval(interval);
+                  (window as unknown as Record<string, unknown>).runtime.EventsEmit(
+                    'ai:done:' + _sessionID, ''
+                  );
+                  return;
+                }
+                const chunk = chunks.slice(idx, idx + 3).join('');
+                idx += 3;
+                (window as unknown as Record<string, unknown>).runtime.EventsEmit(
+                  'ai:chunk:' + _sessionID, chunk
+                );
+              }, 10);
+            }, 100);
+            return Promise.resolve();
+          },
+          ClearChatMessages: () => Promise.resolve(),
         },
       },
       git: {
@@ -143,8 +168,69 @@ export async function mockWailsRuntime(page: Page): Promise<void> {
           CreateFile: () => Promise.resolve(),
           DeleteFile: () => Promise.resolve(),
           GetEventChannel: () => Promise.resolve(),
-          GetFileTree: () => Promise.resolve([]),
-          ReadFile: () => Promise.resolve(''),
+          GetFileTree: () => Promise.resolve({
+            name: 'ai-ide',
+            path: '/project',
+            isDir: true,
+            modTime: '2026-05-23T10:00:00Z',
+            size: 0,
+            children: [
+              {
+                name: 'src',
+                path: '/project/src',
+                isDir: true,
+                modTime: '2026-05-23T10:00:00Z',
+                size: 0,
+                children: [
+                  {
+                    name: 'App.tsx',
+                    path: '/project/src/App.tsx',
+                    isDir: false,
+                    modTime: '2026-05-23T12:00:00Z',
+                    size: 2345,
+                  },
+                  {
+                    name: 'main.tsx',
+                    path: '/project/src/main.tsx',
+                    isDir: false,
+                    modTime: '2026-05-20T09:00:00Z',
+                    size: 345,
+                  },
+                ],
+              },
+              {
+                name: 'package.json',
+                path: '/project/package.json',
+                isDir: false,
+                modTime: '2026-05-20T09:00:00Z',
+                size: 890,
+              },
+              {
+                name: 'README.md',
+                path: '/project/README.md',
+                isDir: false,
+                modTime: '2026-05-20T09:00:00Z',
+                size: 1234,
+              },
+              {
+                name: '.gitignore',
+                path: '/project/.gitignore',
+                isDir: false,
+                modTime: '2026-05-20T09:00:00Z',
+                size: 234,
+              },
+            ],
+          }),
+          ReadFile: (path: string) => {
+            const contents: Record<string, string> = {
+              '/project/src/main.tsx': 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\n\nReactDOM.createRoot(document.getElementById("root")!).render(<App />);',
+              '/project/package.json': '{\n  "name": "ai-ide",\n  "version": "0.1.0"\n}',
+              '/project/README.md': '# AI IDE\n\n一款 AI 驱动的桌面 IDE。',
+              '/project/.gitignore': 'node_modules/\ndist/\n',
+              '/project/src/App.tsx': 'import { useState } from "react";\n\nfunction App() {\n  return <div>Hello</div>;\n}\n\nexport default App;',
+            };
+            return Promise.resolve(contents[path] || '');
+          },
           RenameFile: () => Promise.resolve(),
           SetWatcher: () => Promise.resolve(),
           Unwatch: () => Promise.resolve(),

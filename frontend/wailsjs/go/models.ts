@@ -1,3 +1,116 @@
+export namespace config {
+	
+	export class AISettings {
+	    model: string;
+	    apiKey: string;
+	    baseUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AISettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = source["model"];
+	        this.apiKey = source["apiKey"];
+	        this.baseUrl = source["baseUrl"];
+	    }
+	}
+	export class EditorSettings {
+	    fontSize: number;
+	    fontFamily: string;
+	    tabSize: number;
+	    wordWrap: boolean;
+	    showLineNumbers: boolean;
+	    enableMinimap: boolean;
+	    formatOnSave: boolean;
+	    lineHeight: number;
+	    cursorStyle: string;
+	    cursorBlinking: string;
+	    renderWhitespace: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new EditorSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.fontSize = source["fontSize"];
+	        this.fontFamily = source["fontFamily"];
+	        this.tabSize = source["tabSize"];
+	        this.wordWrap = source["wordWrap"];
+	        this.showLineNumbers = source["showLineNumbers"];
+	        this.enableMinimap = source["enableMinimap"];
+	        this.formatOnSave = source["formatOnSave"];
+	        this.lineHeight = source["lineHeight"];
+	        this.cursorStyle = source["cursorStyle"];
+	        this.cursorBlinking = source["cursorBlinking"];
+	        this.renderWhitespace = source["renderWhitespace"];
+	    }
+	}
+	export class TerminalSettings {
+	    shell: string;
+	    fontSize: number;
+	    fontFamily: string;
+	    cursorStyle: string;
+	    scrollback: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TerminalSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.shell = source["shell"];
+	        this.fontSize = source["fontSize"];
+	        this.fontFamily = source["fontFamily"];
+	        this.cursorStyle = source["cursorStyle"];
+	        this.scrollback = source["scrollback"];
+	    }
+	}
+	export class Settings {
+	    theme: string;
+	    language: string;
+	    autoSave: boolean;
+	    editor: EditorSettings;
+	    terminal: TerminalSettings;
+	    ai: AISettings;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.theme = source["theme"];
+	        this.language = source["language"];
+	        this.autoSave = source["autoSave"];
+	        this.editor = this.convertValues(source["editor"], EditorSettings);
+	        this.terminal = this.convertValues(source["terminal"], TerminalSettings);
+	        this.ai = this.convertValues(source["ai"], AISettings);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace fs {
 	
 	export class FileNode {

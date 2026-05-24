@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { EventsOn } from '../../wailsjs/runtime/runtime';
+import { CreateChatSession, SendChatMessage, ClearChatMessages } from '../../wailsjs/go/main/App';
 
 export type MessageRole = 'user' | 'assistant' | 'system';
 
@@ -15,37 +17,20 @@ interface ChatState {
   inputText: string;
   isLoading: boolean;
   sessionId: string | null;
-  streamTimer: ReturnType<typeof setInterval> | null;
+  error: string | null;
 
   setInputText: (text: string) => void;
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string) => Promise<void>;
   startStream: () => void;
   appendStream: (content: string) => void;
   endStream: () => void;
   clearMessages: () => void;
   stopStream: () => void;
+  initSession: () => Promise<void>;
 }
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
-const MOCK_RESPONSES = [
-  `当然可以！以下是一个简单的冒泡排序算法实现：\n\n\`\`\`typescript\nfunction bubbleSort(arr: number[]): number[] {\n  const n = arr.length;\n  for (let i = 0; i < n - 1; i++) {\n    for (let j = 0; j < n - i - 1; j++) {\n      if (arr[j] > arr[j + 1]) {\n        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];\n      }\n    }\n  }\n  return arr;\n}\n\nconst data = [64, 34, 25, 12, 22, 11, 90];\nconsole.log(bubbleSort(data));\n\`\`\`\n\n这个算法的时间复杂度是 O(n²)，适用于小规模数据排序。`,
-  `这是一个很好的问题！React 的 useEffect Hook 用于处理副作用：\n\n\`\`\`tsx\nimport { useEffect, useState } from 'react';\n\nfunction Example() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    document.title = \`点击了 \${count} 次\`;\n    \n    return () => {\n      console.log('清理副作用');\n    };\n  }, [count]);\n\n  return <button onClick={() => setCount(c => c + 1)}>点击</button>;\n}\n\`\`\`\n\n关键点：\n1. 第一个参数是副作用函数\n2. 第二个参数是依赖数组\n3. 可以返回清理函数`,
-  `你好！我可以帮你编写代码、解答技术问题、优化算法等。请告诉我你需要什么帮助。`,
-];
-
-function getMockResponse(): string {
-  return MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)];
-}
-
-function splitIntoChunks(text: string, chunkSize: number = 3): string[] {
-  const chunks: string[] = [];
-  for (let i = 0; i < text.length; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-  return chunks;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -53,13 +38,52 @@ export const useChatStore = create<ChatState>((set, get) => ({
   inputText: '',
   isLoading: false,
   sessionId: null,
-  streamTimer: null,
+  error: null,
+
+  initSession: async () => {
+    const state = get();
+    if (state.sessionId) return;
+    try {
+      const id = await CreateChatSession();
+      set({ sessionId: id, error: null });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      set({ error: errMsg });
+    }
+  },
 
   setInputText: (text) => set({ inputText: text }),
 
-  sendMessage: (content) => {
+  sendMessage: async (content) => {
     const state = get();
     if (state.isLoading || !content.trim()) return;
+
+    // 确保会话已创建
+    if (!state.sessionId) {
+      try {
+        const id = await CreateChatSession();
+        set({ sessionId: id, error: null });
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        // 将错误作为 assistant 消息显示，让用户能看到反馈
+        set({
+          messages: [
+            ...state.messages,
+            {
+              id: generateId(),
+              role: 'assistant',
+              content: `⚠️ 无法发送消息：${errMsg}`,
+              timestamp: Date.now(),
+            },
+          ],
+          error: errMsg,
+          isLoading: false,
+        });
+        return;
+      }
+    }
+
+    const sessionId = get().sessionId!;
 
     const userMessage: Message = {
       id: generateId(),
@@ -72,11 +96,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       messages: [...state.messages, userMessage],
       inputText: '',
       isLoading: true,
+      error: null,
     }));
-
-    const responseText = getMockResponse();
-    const chunks = splitIntoChunks(responseText);
-    let currentIndex = 0;
 
     const assistantMessageId = generateId();
     set((state) => ({
@@ -92,24 +113,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ],
     }));
 
-    const timer = setInterval(() => {
-      if (currentIndex >= chunks.length) {
-        clearInterval(timer);
-        set((state) => ({
-          messages: state.messages.map((msg) =>
-            msg.id === assistantMessageId
-              ? { ...msg, isStreaming: false }
-              : msg
-          ),
-          isLoading: false,
-          streamTimer: null,
-        }));
-        return;
-      }
+    // 注册 Wails 事件监听，保存取消订阅函数
+    const chunkEvent = `ai:chunk:${sessionId}`;
+    const doneEvent = `ai:done:${sessionId}`;
+    const errorEvent = `ai:error:${sessionId}`;
 
-      const chunk = chunks[currentIndex];
-      currentIndex++;
-
+    const unsubscribeChunk = EventsOn(chunkEvent, (chunk: string) => {
       set((state) => ({
         messages: state.messages.map((msg) =>
           msg.id === assistantMessageId
@@ -117,9 +126,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : msg
         ),
       }));
-    }, 30);
+    });
 
-    set({ streamTimer: timer });
+    const unsubscribeDone = EventsOn(doneEvent, () => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, isStreaming: false }
+            : msg
+        ),
+        isLoading: false,
+      }));
+      unsubscribeChunk();
+      unsubscribeDone();
+    });
+
+    const unsubscribeError = EventsOn(errorEvent, (errMsg: string) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: msg.content + `\n\n[错误: ${errMsg}]`, isStreaming: false }
+            : msg
+        ),
+        isLoading: false,
+        error: errMsg,
+      }));
+      unsubscribeChunk();
+      unsubscribeDone();
+      unsubscribeError();
+    });
+
+    try {
+      await SendChatMessage(sessionId, content.trim());
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: msg.content + `\n\n[错误: ${errMsg}]`, isStreaming: false }
+            : msg
+        ),
+        isLoading: false,
+        error: errMsg,
+      }));
+      unsubscribeChunk();
+      unsubscribeDone();
+      unsubscribeError();
+    }
   },
 
   startStream: () => {
@@ -153,26 +206,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
               : msg
           ),
           isLoading: false,
-          streamTimer: null,
         };
       }
-      return { isLoading: false, streamTimer: null };
+      return { isLoading: false };
     });
   },
 
   clearMessages: () => {
     const state = get();
-    if (state.streamTimer) {
-      clearInterval(state.streamTimer);
+    if (state.sessionId) {
+      ClearChatMessages(state.sessionId).catch(() => {});
     }
-    set({ messages: [], isLoading: false, streamTimer: null });
+    set({ messages: [], isLoading: false, error: null });
   },
 
   stopStream: () => {
-    const state = get();
-    if (state.streamTimer) {
-      clearInterval(state.streamTimer);
-    }
     set((state) => {
       const lastMessage = state.messages[state.messages.length - 1];
       if (lastMessage && lastMessage.isStreaming) {
@@ -183,10 +231,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
               : msg
           ),
           isLoading: false,
-          streamTimer: null,
         };
       }
-      return { isLoading: false, streamTimer: null };
+      return { isLoading: false };
     });
   },
 }));

@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"github.com/swcrbt/ai-ide/internal/config"
 )
 
 // TestNewApp 测试创建App实例
@@ -41,12 +43,23 @@ func TestApp_Greet(t *testing.T) {
 	}
 }
 
-// TestApp_SaveSettings_InvalidJSON 测试保存无效配置
-func TestApp_SaveSettings_InvalidJSON(t *testing.T) {
+// TestApp_SaveSettings 测试保存配置
+func TestApp_SaveSettings(t *testing.T) {
 	app := NewApp()
 
-	err := app.SaveSettings("invalid json")
-	if err == nil {
-		t.Error("保存无效JSON应返回错误")
+	// 初始化数据库
+	if err := config.InitDatabase(); err != nil {
+		t.Skipf("数据库初始化失败: %v", err)
+	}
+
+	settings := config.Settings{
+		Theme:    "dark",
+		Language: "zh",
+		AutoSave: false,
+	}
+
+	err := app.SaveSettings(settings)
+	if err != nil {
+		t.Errorf("SaveSettings() 返回错误: %v", err)
 	}
 }

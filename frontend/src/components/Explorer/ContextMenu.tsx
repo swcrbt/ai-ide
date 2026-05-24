@@ -103,14 +103,12 @@ export function ContextMenu({
 
   return (
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-      <DropdownMenu.Trigger asChild>
-        <div
-          onContextMenu={handleContextMenu}
-          className="flex-1"
-        >
-          {children}
-        </div>
-      </DropdownMenu.Trigger>
+      <div
+        onContextMenu={handleContextMenu}
+        className="flex-1"
+      >
+        {children}
+      </div>
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
