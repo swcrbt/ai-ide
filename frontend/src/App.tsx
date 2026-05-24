@@ -141,10 +141,11 @@ function App() {
     const originals: Record<string, (...args: unknown[]) => void> = {};
 
     methods.forEach((method) => {
-      originals[method] = (console as unknown as Record<string, (...args: unknown[]) => void>)[method];
+      const consoleObj = console as unknown as Record<string, (...args: unknown[]) => void>;
+      originals[method] = consoleObj[method].bind(console);
 
-      (console as unknown as Record<string, (...args: unknown[]) => void>)[method] = (...args: unknown[]) => {
-        // 调用原始方法
+      consoleObj[method] = (...args: unknown[]) => {
+        // 调用原始方法（已通过 bind 绑定 console 为 this）
         originals[method](...args);
 
         // 推送条目
