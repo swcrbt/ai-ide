@@ -102,15 +102,14 @@ export function FileTree({ onFileClick }: FileTreeProps) {
   }, [treeData, expandedPaths]);
 
   const nodeCount = flattenedNodes.length;
-  const enableVirtualization = nodeCount > 100;
   const ITEM_HEIGHT = 32;
 
   // 展开/折叠后重置列表
   useEffect(() => {
-    if (listRef.current && enableVirtualization) {
+    if (listRef.current) {
       listRef.current.resetAfterIndex(0);
     }
-  }, [expandedPaths, enableVirtualization]);
+  }, [expandedPaths]);
 
   const handleSwitchProject = useCallback(async (id: number) => {
     await switchProject(id);
@@ -248,8 +247,7 @@ export function FileTree({ onFileClick }: FileTreeProps) {
             <p>暂无文件</p>
             <p className="text-xs mt-1 opacity-70">项目目录为空或加载失败</p>
           </div>
-        ) : enableVirtualization ? (
-          // 虚拟滚动模式（大项目）
+        ) : (
           <List
             ref={listRef}
             itemCount={nodeCount}
@@ -261,11 +259,6 @@ export function FileTree({ onFileClick }: FileTreeProps) {
           >
             {FileTreeRow}
           </List>
-        ) : (
-          // 普通渲染模式（小项目）
-          treeData.map((node) => (
-            <FileTreeNodeRow key={node.path} node={node} depth={0} onFileClick={onFileClick} />
-          ))
         )}
       </div>
 
