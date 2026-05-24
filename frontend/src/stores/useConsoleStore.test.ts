@@ -103,4 +103,120 @@ describe('useConsoleStore', () => {
     const state = useConsoleStore.getState();
     expect(state.autoScroll).toBe(false);
   });
+
+  // ==================== 边界条件测试 ====================
+
+  it('addEntry 应处理空消息', () => {
+    const store = useConsoleStore.getState();
+    store.addEntry({ level: 'log', message: '', timestamp: 1000, source: 'console', args: [] });
+
+    const state = useConsoleStore.getState();
+    expect(state.entries).toHaveLength(1);
+    expect(state.entries[0].message).toBe('');
+  });
+
+  it('addEntry 应处理 null 和 undefined 参数', () => {
+    const store = useConsoleStore.getState();
+    store.addEntry({ level: 'warn', message: 'null test', timestamp: 2000, source: 'console', args: [null, undefined] });
+
+    const state = useConsoleStore.getState();
+    expect(state.entries).toHaveLength(1);
+    expect(state.entries[0].args).toEqual([null, undefined]);
+  });
+
+  it('error 级别的 addEntry 应递增 errorCount', () => {
+    const store = useConsoleStore.getState();
+    store.addEntry({ level: 'error', message: '错误1', timestamp: 1000, source: 'console', args: [] });
+    store.addEntry({ level: 'error', message: '错误2', timestamp: 2000, source: 'console', args: [] });
+    store.addEntry({ level: 'warn', message: '警告', timestamp: 3000, source: 'console', args: [] });
+
+    const state = useConsoleStore.getState();
+    expect(state.errorCount).toBe(2);
+    expect(state.warnCount).toBe(1);
+  });
+
+  it('过滤 + 搜索应同时生效', () => {
+    const store = useConsoleStore.getState();
+    store.addEntry({ level: 'log', message: '初始化完成', timestamp: 1000, source: 'console', args: [] });
+    store.addEntry({ level: 'error', message: '初始化错误', timestamp: 2000, source: 'console', args: [] });
+    store.addEntry({ level: 'log', message: '渲染完成', timestamp: 3000, source: 'console', args: [] });
+
+    // 只显示 error 级别 + 搜索 "错误"
+    store.setFilterLevel('log', false);
+    store.setFilterLevel('info', false);
+    store.setFilterLevel('debug', false);
+    store.setSearchQuery('错误');
+
+    const state = useConsoleStore.getState();
+    const filtered = state.entries.filter((e) => {
+      return state.filterLevel.has(e.level)
+        && e.message.toLowerCase().includes(state.searchQuery.toLowerCase());
+    });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].message).toBe('初始化错误');
+  });
+
+  // ==================== 劫持兼容性测试 ====================
+  // 验证 console.log 通过 .bind(console) 后安全调用（WebKit 兼容）
+
+  it('模拟劫持：通过 .bind(console) 调用原始 console 不应崩溃', () => {
+    // 保存原始 console.log
+    const originalLog = console.log.bind(console);
+
+    // 替换 console.log 为劫持版本（模拟 App.tsx useEffect 的行为）
+    const capturedEntries: string[] = [];
+    const mockAddEntry = (entry: { message: string }) => {
+      capturedEntries.push(entry.message);
+    };
+
+    const hijackedLog = (...args: unknown[]) => {
+      // 通过绑定后的函数调用原始 console（这就是 .bind(console) 保护的地方）
+      originalLog(...args);
+      // 模拟 addEntry 调用
+      mockAddEntry({ message: args.map(String).join(' ') });
+    };
+
+    // 替换 console.log
+    const previousLog = console.log;
+    console.log = hijackedLog as typeof console.log;
+
+    try {
+      // 调用 console.log 不应崩溃
+      console.log('劫持测试消息');
+      console.log('第二条消息', 42, true);
+
+      // 验证消息被捕获
+      expect(capturedEntries).toHaveLength(2);
+      expect(capturedEntries[0]).toBe('劫持测试消息');
+      expect(capturedEntries[1]).toBe('第二条消息 42 true');
+    } finally {
+      // 恢复原始 console.log
+      console.log = previousLog;
+    }
+  });
+
+  it('模拟劫持：多级 log 调用不应崩溃', () => {
+    const originalLog = console.log.bind(console);
+    const logs: string[] = [];
+
+    const hijackedLog = (...args: unknown[]) => {
+      originalLog(...args);
+      logs.push(args.map(String).join(' '));
+    };
+
+    const prev = console.log;
+    console.log = hijackedLog as typeof console.log;
+
+    try {
+      // 连续快速调用
+      for (let i = 0; i < 100; i++) {
+        console.log(`消息 ${i}`);
+      }
+      expect(logs).toHaveLength(100);
+      expect(logs[0]).toBe('消息 0');
+      expect(logs[99]).toBe('消息 99');
+    } finally {
+      console.log = prev;
+    }
+  });
 });

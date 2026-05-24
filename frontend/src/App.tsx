@@ -30,6 +30,7 @@ import { SearchPanel } from './components/Search/SearchPanel';
 import { ChatPanel } from './components/Chat/ChatPanel';
 import { ConsolePanel } from './components/Console/ConsolePanel';
 import { useConsoleStore } from './stores/useConsoleStore';
+import type { ConsoleEntry } from './stores/useConsoleStore';
 import { TaskCard } from './components/Task/TaskCard';
 import { TaskCreateDialog } from './components/Task/TaskCreateDialog';
 import { BranchExists, CreateBranch } from './types/wails';
@@ -137,8 +138,30 @@ function App() {
     }
 
     // 劫持 console 方法
+    // 使用 requestAnimationFrame 批量推送，避免渲染期间更新 store 导致无限循环
     const methods = ['log', 'error', 'warn', 'info', 'debug'] as const;
     const originals: Record<string, (...args: unknown[]) => void> = {};
+
+    // 待推送条目队列 + RAF 防抖标记
+    let pendingEntries: Array<{
+      level: ConsoleEntry['level'];
+      message: string;
+      args: unknown[];
+      timestamp: number;
+    }> = [];
+    let rafId = 0;
+
+    function flushPendingEntries() {
+      const entries = pendingEntries;
+      pendingEntries = [];
+      rafId = 0;
+      entries.forEach((entry) => {
+        store.addEntry({
+          ...entry,
+          source: 'console',
+        });
+      });
+    }
 
     methods.forEach((method) => {
       const consoleObj = console as unknown as Record<string, (...args: unknown[]) => void>;
@@ -148,15 +171,18 @@ function App() {
         // 调用原始方法（已通过 bind 绑定 console 为 this）
         originals[method](...args);
 
-        // 推送条目
+        // 批量推送条目（通过 RAF 延迟，防止 React 渲染循环）
         const message = args.map(safeStringify).join(' ');
-        store.addEntry({
+        pendingEntries.push({
           level: method,
           message: message.length > 500 ? message.slice(0, 500) + '...' : message,
-          timestamp: Date.now(),
-          source: 'console',
           args,
+          timestamp: Date.now(),
         });
+
+        if (!rafId) {
+          rafId = requestAnimationFrame(flushPendingEntries);
+        }
       };
     });
 
