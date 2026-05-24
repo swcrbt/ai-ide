@@ -207,7 +207,8 @@ function App() {
     });
 
     registerHandler('view.globalSearch', () => {
-      showAppToast('全局搜索功能预留');
+      setRightTool('search');
+      if (!fileTreeOpen) setFileTreeOpen(true);
     });
 
     registerHandler('view.toggleSidebar', () => {
@@ -338,6 +339,10 @@ function App() {
     handlerMap.set('view.commandPalette', () => setCommandPaletteOpen(true));
     handlerMap.set('view.toggleSidebar', () => toggleSidebar());
     handlerMap.set('view.toggleBottomPanel', () => setBottomPanelOpen((p) => !p));
+    handlerMap.set('view.globalSearch', () => {
+      setRightTool('search');
+      if (!fileTreeOpen) setFileTreeOpen(true);
+    });
     handlerMap.set('view.showGit', () => setLeftTab('git'));
     handlerMap.set('view.toggleTerminal', () => {
       setBottomPanelOpen((p) => !p);
