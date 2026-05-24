@@ -538,12 +538,17 @@ function App() {
             explorer: <FileTree onFileClick={async (path) => {
               try {
                 const bytes = await ReadFile(path);
+                if (!bytes || bytes.length === 0) {
+                  openFile(path, '');
+                  setActiveFile(path);
+                  return;
+                }
                 const content = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
                 openFile(path, content);
                 setActiveFile(path);
               } catch (err) {
                 console.error('读取文件失败:', err);
-                showAppToast(`读取文件失败: ${err}`);
+                showAppToast(`读取文件失败: ${path}`);
               }
             }} />,
           }}
