@@ -1,6 +1,7 @@
 package project
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,9 +46,13 @@ func (s *ProjectService) ListProjects() ([]Project, error) {
 	for rows.Next() {
 		var p Project
 		if err := rows.Scan(&p.ID, &p.Name, &p.Path, &p.CreatedAt, &p.UpdatedAt); err != nil {
-			continue
+			return nil, fmt.Errorf("扫描项目数据失败: %w", err)
 		}
 		projects = append(projects, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历项目列表失败: %w", err)
 	}
 
 	return projects, nil
@@ -80,6 +85,9 @@ func (s *ProjectService) AddProject(path string) (*Project, bool, error) {
 		project, err := s.GetProject(existingID)
 		return project, false, err
 	}
+	if err != sql.ErrNoRows {
+		return nil, false, fmt.Errorf("检查项目是否存在失败: %w", err)
+	}
 
 	// 4. 检查是否为 Git 仓库
 	isGitRepo := s.gitService.IsGitRepo(absPath)
@@ -97,7 +105,10 @@ func (s *ProjectService) AddProject(path string) (*Project, bool, error) {
 		return nil, false, fmt.Errorf("保存项目失败: %w", err)
 	}
 
-	id, _ := result.LastInsertId()
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, false, fmt.Errorf("获取插入 ID 失败: %w", err)
+	}
 	project, err := s.GetProject(id)
 	return project, false, err
 }
@@ -115,7 +126,18 @@ func (s *ProjectService) InitGitAndSave(path string) (*Project, error) {
 		return nil, fmt.Errorf("获取绝对路径失败: %w", err)
 	}
 
-	// 3. 保存到数据库
+	// 3. 检查是否已存在
+	var existingID int64
+	err = config.DB.QueryRow("SELECT id FROM projects WHERE path = ?", absPath).Scan(&existingID)
+	if err == nil {
+		// 已存在，返回已有项目
+		return s.GetProject(existingID)
+	}
+	if err != sql.ErrNoRows {
+		return nil, fmt.Errorf("检查项目是否存在失败: %w", err)
+	}
+
+	// 4. 保存到数据库
 	name := filepath.Base(absPath)
 	result, err := config.DB.Exec(
 		"INSERT INTO projects (name, path, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
@@ -125,7 +147,10 @@ func (s *ProjectService) InitGitAndSave(path string) (*Project, error) {
 		return nil, fmt.Errorf("保存项目失败: %w", err)
 	}
 
-	id, _ := result.LastInsertId()
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("获取插入 ID 失败: %w", err)
+	}
 	return s.GetProject(id)
 }
 
