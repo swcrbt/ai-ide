@@ -23,7 +23,7 @@ export function AddProjectDialog() {
       const path = await OpenDirectoryDialog({
         Title: '选择项目目录',
         CanCreateDirectories: false,
-      });
+      } as any);
       if (path) {
         setSelectedPath(path);
         setNeedsInit(false);

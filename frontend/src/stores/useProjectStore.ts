@@ -100,7 +100,7 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
         await get().switchProject(result.project.id);
       }
 
-      return { project: result.project, needsInit: result.needsInit };
+      return { project: result.project ?? null, needsInit: result.needsInit };
     } catch (err) {
       console.error('添加项目失败:', err);
       throw err;
