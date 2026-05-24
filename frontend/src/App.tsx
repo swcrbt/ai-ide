@@ -141,9 +141,9 @@ function App() {
     const originals: Record<string, (...args: unknown[]) => void> = {};
 
     methods.forEach((method) => {
-      originals[method] = (console as Record<string, (...args: unknown[]) => void>)[method];
+      originals[method] = (console as unknown as Record<string, (...args: unknown[]) => void>)[method];
 
-      (console as Record<string, (...args: unknown[]) => void>)[method] = (...args: unknown[]) => {
+      (console as unknown as Record<string, (...args: unknown[]) => void>)[method] = (...args: unknown[]) => {
         // 调用原始方法
         originals[method](...args);
 
@@ -195,7 +195,7 @@ function App() {
     // 清理函数（恢复原始方法）
     return () => {
       methods.forEach((method) => {
-        (console as Record<string, (...args: unknown[]) => void>)[method] = originals[method];
+        (console as unknown as Record<string, (...args: unknown[]) => void>)[method] = originals[method];
       });
       window.onerror = prevOnError;
       window.onunhandledrejection = prevOnUnhandled;
