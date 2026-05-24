@@ -13,6 +13,7 @@ import {
 import { ContextMenu } from './ContextMenu';
 import { useExplorerStore } from '../../stores/useExplorerStore';
 import { useEditorStore } from '../../stores/useEditorStore';
+import { useGitStore } from '../../stores/useGitStore';
 import type { FileNode, FileOperation } from '../../stores/useExplorerStore';
 
 interface FileTreeNodeProps {
@@ -57,6 +58,7 @@ export function FileTreeNodeRow({ node, depth = 0, onFileClick }: FileTreeNodePr
   const { expandedPaths, selectedPath, toggleNode, selectNode, performOperation } =
     useExplorerStore();
   const { openFile } = useEditorStore();
+  const { getFileStatus } = useGitStore();
 
   const isExpanded = expandedPaths.has(node.path);
   const isSelected = selectedPath === node.path;
@@ -81,7 +83,9 @@ export function FileTreeNodeRow({ node, depth = 0, onFileClick }: FileTreeNodePr
     toggleNode(node.path);
   };
 
-  const gitStatus = node.gitStatus;
+  // 从 GitStore 获取文件状态
+  const gitStatusLetter = getFileStatus(node.path);
+  const gitStatus = gitStatusLetter ? statusLetterToStatus(gitStatusLetter) : null;
   const gitConfig = gitStatus ? gitStatusConfig[gitStatus] : null;
 
   const nodeContent = (
@@ -143,6 +147,19 @@ export function FileTreeNodeRow({ node, depth = 0, onFileClick }: FileTreeNodePr
       </ContextMenu>
     </div>
   );
+}
+
+// 状态字母转换为状态字符串
+function statusLetterToStatus(letter: string): string | null {
+  switch (letter) {
+    case 'M': return 'modified';
+    case 'A': return 'added';
+    case 'D': return 'deleted';
+    case '?': return 'untracked';
+    case 'R': return 'renamed';
+    case 'U': return 'conflicted';
+    default: return null;
+  }
 }
 
 /**
