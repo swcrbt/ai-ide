@@ -68,6 +68,9 @@ interface GitState {
   // 提交信息
   commitMessage: string;
 
+  // 文件状态映射（用于文件树显示）
+  fileStatusMap: Map<string, string>; // path -> status letter (M, A, D, ?, etc.)
+
   // 操作方法
   loadStatus: (path?: string) => Promise<void>;
   loadSummary: (path?: string) => Promise<void>;
@@ -87,6 +90,9 @@ interface GitState {
   setSelectedFile: (path: string | null) => void;
   getFileStatusColor: (status: string) => string;
   getFileStatusLabel: (status: string) => string;
+
+  // 获取文件状态
+  getFileStatus: (path: string) => string | null;
 }
 
 export const useGitStore = create<GitState>()((set, get) => ({
@@ -104,6 +110,7 @@ export const useGitStore = create<GitState>()((set, get) => ({
   isPushing: false,
   isPulling: false,
   commitMessage: '',
+  fileStatusMap: new Map(),
 
   // 加载 Git 状态
   loadStatus: async (path) => {
@@ -113,10 +120,27 @@ export const useGitStore = create<GitState>()((set, get) => ({
       if (!repoPath) return;
 
       const status = await Status(repoPath);
-      set({ status, currentBranch: status.branch || '', isGitRepo: true });
+
+      // 构建文件状态映射
+      const fileStatusMap = new Map<string, string>();
+
+      // 添加各类文件状态
+      status.modified?.forEach((f: GitFileStatus) => fileStatusMap.set(f.path, 'M'));
+      status.added?.forEach((f: GitFileStatus) => fileStatusMap.set(f.path, 'A'));
+      status.deleted?.forEach((f: GitFileStatus) => fileStatusMap.set(f.path, 'D'));
+      status.untracked?.forEach((f: GitFileStatus) => fileStatusMap.set(f.path, '?'));
+      status.renamed?.forEach((f: GitFileStatus) => fileStatusMap.set(f.path, 'R'));
+      status.conflicted?.forEach((f: GitFileStatus) => fileStatusMap.set(f.path, 'U'));
+
+      set({
+        status,
+        currentBranch: status.branch || '',
+        isGitRepo: true,
+        fileStatusMap,
+      });
     } catch (err) {
       console.error('加载 Git 状态失败:', err);
-      set({ status: null, isGitRepo: false });
+      set({ status: null, isGitRepo: false, fileStatusMap: new Map() });
     } finally {
       set({ isLoading: false });
     }
@@ -301,4 +325,9 @@ export const useGitStore = create<GitState>()((set, get) => ({
 
   // 获取文件状态标签
   getFileStatusLabel: (status) => statusLabelMap[status] || status,
+
+  // 获取文件状态
+  getFileStatus: (path: string) => {
+    return get().fileStatusMap.get(path) || null;
+  },
 }));
