@@ -3,8 +3,9 @@ import { useConsoleStore, resetNextId } from './useConsoleStore';
 
 describe('useConsoleStore', () => {
   beforeEach(() => {
-    // 重置 store 到初始状态，同时重置 id 计数器
+    // 重置 id 计数器
     resetNextId();
+    // 重置 store 到初始状态
     useConsoleStore.setState({
       entries: [],
       filterLevel: new Set(['log', 'error', 'warn', 'info', 'debug']),
