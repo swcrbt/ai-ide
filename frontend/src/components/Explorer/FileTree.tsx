@@ -79,9 +79,12 @@ export function FileTree({ onFileClick }: FileTreeProps) {
     loadProjects();
   }, [loadProjects]);
 
+  // 只在有当前项目时加载文件树
   useEffect(() => {
-    loadTree();
-  }, [loadTree]);
+    if (currentProject) {
+      loadTree(currentProject.path);
+    }
+  }, [loadTree, currentProject]);
 
   // 点击外部关闭下拉框
   useEffect(() => {
@@ -133,7 +136,7 @@ export function FileTree({ onFileClick }: FileTreeProps) {
       {/* 头部工具栏 */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-sidebar-border">
         {/* 项目选择器 */}
-        <div className="flex items-center gap-2 flex-1 min-w-0" ref={dropdownRef}>
+        <div className="flex items-center gap-2 flex-1 min-w-0 relative" ref={dropdownRef}>
           <FolderTree size={16} className="text-muted-foreground flex-shrink-0" />
           
           {/* 下拉框触发器 */}
@@ -152,7 +155,7 @@ export function FileTree({ onFileClick }: FileTreeProps) {
 
           {/* 下拉菜单 */}
           {isDropdownOpen && (
-            <div className="absolute top-10 left-2 right-2 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
               {/* 项目列表 */}
               {projects.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-muted-foreground">
