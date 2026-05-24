@@ -37,6 +37,8 @@ interface ProjectState {
   isLoading: boolean;
   /** 添加项目对话框是否打开 */
   isAddDialogOpen: boolean;
+  /** 错误信息 */
+  error: string | null;
 }
 
 /**
@@ -55,6 +57,8 @@ interface ProjectActions {
   switchProject: (id: number) => Promise<void>;
   /** 设置添加项目对话框状态 */
   setAddDialogOpen: (open: boolean) => void;
+  /** 清除错误信息 */
+  clearError: () => void;
 }
 
 /**
@@ -68,16 +72,19 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
   currentProject: null,
   isLoading: false,
   isAddDialogOpen: false,
+  error: null,
 
   /** 加载项目列表 */
   loadProjects: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const projects = await ListProjects();
       set({ projects: projects || [], isLoading: false });
-    } catch (err) {
+    } catch (err: any) {
+      const errorMsg = err?.message || '加载项目列表失败';
       console.error('加载项目列表失败:', err);
-      set({ projects: [], isLoading: false });
+      set({ projects: [], isLoading: false, error: errorMsg });
+      throw err;
     }
   },
 
@@ -142,33 +149,50 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
       throw new Error('项目不存在');
     }
 
-    set({ currentProject: project });
+    set({ currentProject: project, error: null });
+
+    const errors: string[] = [];
 
     // 设置 Git 仓库路径
     try {
       await SetCurrentProject(project.path);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message || '设置当前项目失败';
       console.error('设置当前项目失败:', err);
+      errors.push(msg);
     }
 
     // 加载文件树
     try {
       await useExplorerStore.getState().loadTree(project.path);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message || '加载文件树失败';
       console.error('加载文件树失败:', err);
+      errors.push(msg);
     }
 
     // 加载 Git 状态
     try {
       await useGitStore.getState().loadStatus(project.path);
       await useGitStore.getState().loadSummary(project.path);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message || '加载 Git 状态失败';
       console.error('加载 Git 状态失败:', err);
+      errors.push(msg);
+    }
+
+    if (errors.length > 0) {
+      set({ error: errors.join('; ') });
     }
   },
 
   /** 设置添加项目对话框状态 */
   setAddDialogOpen: (open: boolean) => {
     set({ isAddDialogOpen: open });
+  },
+
+  /** 清除错误信息 */
+  clearError: () => {
+    set({ error: null });
   },
 }));

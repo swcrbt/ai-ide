@@ -83,10 +83,11 @@ describe('useProjectStore', () => {
     it('should handle error and set empty projects', async () => {
       vi.mocked(ListProjects).mockRejectedValue(new Error('Failed to load'));
 
-      await useProjectStore.getState().loadProjects();
+      await expect(useProjectStore.getState().loadProjects()).rejects.toThrow('Failed to load');
 
       expect(useProjectStore.getState().projects).toEqual([]);
       expect(useProjectStore.getState().isLoading).toBe(false);
+      expect(useProjectStore.getState().error).toBe('Failed to load');
     });
   });
 
