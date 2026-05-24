@@ -38,6 +38,10 @@ export function ListProjects() {
   return window['go']['main']['App']['ListProjects']();
 }
 
+export function OpenDirectoryDialog(arg1) {
+  return window['go']['main']['App']['OpenDirectoryDialog'](arg1);
+}
+
 export function RemoveProject(arg1) {
   return window['go']['main']['App']['RemoveProject'](arg1);
 }

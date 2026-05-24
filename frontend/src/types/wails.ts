@@ -47,6 +47,8 @@
 import { git } from '../../wailsjs/go/models';
 /** 从 Wails 生成文件导入 fs 命名空间类型 */
 import { fs } from '../../wailsjs/go/models';
+/** 从 Wails 生成文件导入 project 命名空间类型 */
+import { project } from '../../wailsjs/go/models';
 
 // ---------------------------------------------------------------------------
 // Git 类型 / Git Types
@@ -179,36 +181,26 @@ export { Unstage } from '../../wailsjs/go/git/GitService';
 // Project 服务函数 / Project Service Functions
 // ---------------------------------------------------------------------------
 
-// Project 服务函数通过 App 暴露
-// 注意：这些函数在后端实现后会自动生成到 wailsjs/go/main/App.d.ts 中
-// 目前先使用占位实现，避免 TypeScript 编译错误
+/** 项目类型 */
+export type Project = project.Project;
+
+/** 添加项目结果 */
+export type AddProjectResult = project.AddProjectResult;
 
 /** 获取项目列表 */
-export function ListProjects(): Promise<Array<{ id: number; name: string; path: string; createdAt: string; updatedAt: string }>> {
-  // @ts-ignore - Wails 运行时全局可用
-  return window.go?.main?.App?.ListProjects?.() || Promise.resolve([]);
-}
+export { ListProjects } from '../../wailsjs/go/main/App';
 
 /** 添加项目 */
-export function AddProject(path: string): Promise<[any, boolean]> {
-  // @ts-ignore - Wails 运行时全局可用
-  return window.go?.main?.App?.AddProject?.(path) || Promise.resolve([null, false]);
-}
+export { AddProject } from '../../wailsjs/go/main/App';
 
 /** 初始化 Git 并保存项目 */
-export function InitGitAndSave(path: string): Promise<any> {
-  // @ts-ignore - Wails 运行时全局可用
-  return window.go?.main?.App?.InitGitAndSave?.(path) || Promise.resolve(null);
-}
+export { InitGitAndSave } from '../../wailsjs/go/main/App';
 
 /** 删除项目 */
-export function RemoveProject(id: number): Promise<void> {
-  // @ts-ignore - Wails 运行时全局可用
-  return window.go?.main?.App?.RemoveProject?.(id) || Promise.resolve();
-}
+export { RemoveProject } from '../../wailsjs/go/main/App';
 
 /** 设置当前项目 */
-export function SetCurrentProject(path: string): Promise<void> {
-  // @ts-ignore - Wails 运行时全局可用
-  return window.go?.main?.App?.SetCurrentProject?.(path) || Promise.resolve();
-}
+export { SetCurrentProject } from '../../wailsjs/go/main/App';
+
+/** 打开目录选择对话框 */
+export { OpenDirectoryDialog } from '../../wailsjs/go/main/App';

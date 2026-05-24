@@ -19,8 +19,8 @@ export function AddProjectDialog() {
     setError('');
     try {
       // 使用 Wails 运行时打开目录对话框
-      // @ts-ignore - Wails 运行时全局可用
-      const path = await window.go?.main?.App?.OpenDirectoryDialog?.({
+      const { OpenDirectoryDialog } = await import('../../types/wails');
+      const path = await OpenDirectoryDialog({
         Title: '选择项目目录',
         CanCreateDirectories: false,
       });

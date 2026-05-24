@@ -18,16 +18,9 @@ vi.mock('../../stores/useProjectStore', () => ({
 
 // Mock Wails 运行时
 const mockOpenDirectoryDialog = vi.fn();
-Object.defineProperty(window, 'go', {
-  writable: true,
-  value: {
-    main: {
-      App: {
-        OpenDirectoryDialog: mockOpenDirectoryDialog,
-      },
-    },
-  },
-});
+vi.mock('../../types/wails', () => ({
+  OpenDirectoryDialog: mockOpenDirectoryDialog,
+}));
 
 describe('AddProjectDialog', () => {
   beforeEach(() => {

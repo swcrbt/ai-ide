@@ -177,7 +177,7 @@ func (a *App) ListProjects() ([]project.Project, error) {
 }
 
 // AddProject 添加新项目
-func (a *App) AddProject(path string) (*project.Project, bool, error) {
+func (a *App) AddProject(path string) (*project.AddProjectResult, error) {
 	return a.ProjectService.AddProject(path)
 }
 
@@ -194,4 +194,9 @@ func (a *App) RemoveProject(id int64) error {
 // SetCurrentProject 设置当前项目
 func (a *App) SetCurrentProject(path string) error {
 	return a.ProjectService.SetCurrentProject(path)
+}
+
+// OpenDirectoryDialog 打开目录选择对话框
+func (a *App) OpenDirectoryDialog(options wailsRuntime.OpenDialogOptions) (string, error) {
+	return wailsRuntime.OpenDirectoryDialog(a.ctx, options)
 }

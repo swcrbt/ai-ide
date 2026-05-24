@@ -94,7 +94,7 @@ describe('useProjectStore', () => {
   describe('addProject', () => {
     it('should call AddProject and auto switch if project is not null', async () => {
       const mockProject = { id: 1, name: 'Project 1', path: '/path/1', createdAt: '2024-01-01', updatedAt: '2024-01-01' };
-      vi.mocked(AddProject).mockResolvedValue([mockProject, false] as any);
+      vi.mocked(AddProject).mockResolvedValue({ project: mockProject, needsInit: false } as any);
       vi.mocked(ListProjects).mockResolvedValue([mockProject]);
       vi.mocked(SetCurrentProject).mockResolvedValue(undefined);
 
@@ -108,7 +108,7 @@ describe('useProjectStore', () => {
     });
 
     it('should return null project without switching if project is null', async () => {
-      vi.mocked(AddProject).mockResolvedValue([null, true] as any);
+      vi.mocked(AddProject).mockResolvedValue({ project: null, needsInit: true } as any);
 
       const result = await useProjectStore.getState().addProject('/path/1');
 

@@ -20,6 +20,12 @@ type Project struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// AddProjectResult 添加项目结果
+type AddProjectResult struct {
+	Project   *Project `json:"project"`
+	NeedsInit bool     `json:"needsInit"`
+}
+
 // ProjectService 项目管理服务
 type ProjectService struct {
 	gitService *git.GitService
@@ -59,22 +65,22 @@ func (s *ProjectService) ListProjects() ([]Project, error) {
 }
 
 // AddProject 添加新项目
-// 返回: (project, needsInit, error)
-// needsInit 为 true 表示需要初始化 Git
-func (s *ProjectService) AddProject(path string) (*Project, bool, error) {
+// 返回: (result, error)
+// result.NeedsInit 为 true 表示需要初始化 Git
+func (s *ProjectService) AddProject(path string) (*AddProjectResult, error) {
 	// 1. 验证路径存在且为目录
 	info, err := os.Stat(path)
 	if err != nil {
-		return nil, false, fmt.Errorf("路径不存在: %s", path)
+		return nil, fmt.Errorf("路径不存在: %s", path)
 	}
 	if !info.IsDir() {
-		return nil, false, fmt.Errorf("路径不是目录: %s", path)
+		return nil, fmt.Errorf("路径不是目录: %s", path)
 	}
 
 	// 2. 获取绝对路径
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, false, fmt.Errorf("获取绝对路径失败: %w", err)
+		return nil, fmt.Errorf("获取绝对路径失败: %w", err)
 	}
 
 	// 3. 检查是否已存在
@@ -83,16 +89,16 @@ func (s *ProjectService) AddProject(path string) (*Project, bool, error) {
 	if err == nil {
 		// 已存在，返回已有项目
 		project, err := s.GetProject(existingID)
-		return project, false, err
+		return &AddProjectResult{Project: project, NeedsInit: false}, err
 	}
 	if err != sql.ErrNoRows {
-		return nil, false, fmt.Errorf("检查项目是否存在失败: %w", err)
+		return nil, fmt.Errorf("检查项目是否存在失败: %w", err)
 	}
 
 	// 4. 检查是否为 Git 仓库
 	isGitRepo := s.gitService.IsGitRepo(absPath)
 	if !isGitRepo {
-		return nil, true, nil
+		return &AddProjectResult{Project: nil, NeedsInit: true}, nil
 	}
 
 	// 5. 是 Git 仓库，保存到数据库
@@ -102,15 +108,15 @@ func (s *ProjectService) AddProject(path string) (*Project, bool, error) {
 		name, absPath,
 	)
 	if err != nil {
-		return nil, false, fmt.Errorf("保存项目失败: %w", err)
+		return nil, fmt.Errorf("保存项目失败: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return nil, false, fmt.Errorf("获取插入 ID 失败: %w", err)
+		return nil, fmt.Errorf("获取插入 ID 失败: %w", err)
 	}
 	project, err := s.GetProject(id)
-	return project, false, err
+	return &AddProjectResult{Project: project, NeedsInit: false}, err
 }
 
 // InitGitAndSave 初始化 Git 并保存项目

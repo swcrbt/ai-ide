@@ -32,18 +32,18 @@ func TestAddProject_WithGitRepo(t *testing.T) {
 
 	service := NewProjectService(gitService)
 
-	project, needsInit, err := service.AddProject(tmpDir)
+	result, err := service.AddProject(tmpDir)
 	if err != nil {
 		t.Fatalf("添加项目失败: %v", err)
 	}
-	if needsInit {
+	if result.NeedsInit {
 		t.Error("已有 Git 仓库的项目不应需要初始化")
 	}
-	if project == nil {
+	if result.Project == nil {
 		t.Fatal("项目不应为空")
 	}
-	if project.Name != filepath.Base(tmpDir) {
-		t.Errorf("项目名称不匹配: got %s, want %s", project.Name, filepath.Base(tmpDir))
+	if result.Project.Name != filepath.Base(tmpDir) {
+		t.Errorf("项目名称不匹配: got %s, want %s", result.Project.Name, filepath.Base(tmpDir))
 	}
 }
 
@@ -52,14 +52,14 @@ func TestAddProject_WithoutGitRepo(t *testing.T) {
 	gitService := git.NewGitService()
 	service := NewProjectService(gitService)
 
-	project, needsInit, err := service.AddProject(tmpDir)
+	result, err := service.AddProject(tmpDir)
 	if err != nil {
 		t.Fatalf("添加项目失败: %v", err)
 	}
-	if !needsInit {
+	if !result.NeedsInit {
 		t.Error("无 Git 仓库的项目应需要初始化")
 	}
-	if project != nil {
+	if result.Project != nil {
 		t.Error("未初始化的项目应返回 nil")
 	}
 }
@@ -91,17 +91,17 @@ func TestAddProject_Duplicate(t *testing.T) {
 	service := NewProjectService(gitService)
 
 	// 第一次添加
-	project1, _, _ := service.AddProject(tmpDir)
+	result1, _ := service.AddProject(tmpDir)
 
 	// 第二次添加（重复）
-	project2, needsInit, err := service.AddProject(tmpDir)
+	result2, err := service.AddProject(tmpDir)
 	if err != nil {
 		t.Fatalf("添加重复项目不应报错: %v", err)
 	}
-	if needsInit {
+	if result2.NeedsInit {
 		t.Error("重复项目不应需要初始化")
 	}
-	if project2.ID != project1.ID {
+	if result2.Project.ID != result1.Project.ID {
 		t.Error("重复添加应返回同一项目")
 	}
 }
@@ -110,7 +110,7 @@ func TestAddProject_InvalidPath(t *testing.T) {
 	gitService := git.NewGitService()
 	service := NewProjectService(gitService)
 
-	_, _, err := service.AddProject("/nonexistent/path")
+	_, err := service.AddProject("/nonexistent/path")
 	if err == nil {
 		t.Error("无效路径应返回错误")
 	}
@@ -145,15 +145,15 @@ func TestRemoveProject(t *testing.T) {
 	gitService.Init(tmpDir)
 
 	service := NewProjectService(gitService)
-	project, _, _ := service.AddProject(tmpDir)
+	result, _ := service.AddProject(tmpDir)
 
-	err := service.RemoveProject(project.ID)
+	err := service.RemoveProject(result.Project.ID)
 	if err != nil {
 		t.Fatalf("删除项目失败: %v", err)
 	}
 
 	// 验证已删除
-	_, err = service.GetProject(project.ID)
+	_, err = service.GetProject(result.Project.ID)
 	if err == nil {
 		t.Error("删除后应无法获取项目")
 	}

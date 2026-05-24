@@ -92,17 +92,15 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
   addProject: async (path: string) => {
     try {
       const result = await AddProject(path);
-      // result 是 [Project, boolean] 数组
-      const [project, needsInit] = result as unknown as [Project | null, boolean];
 
-      if (project) {
+      if (result.project) {
         // 刷新列表
         await get().loadProjects();
         // 自动切换到新项目
-        await get().switchProject(project.id);
+        await get().switchProject(result.project.id);
       }
 
-      return { project, needsInit };
+      return { project: result.project, needsInit: result.needsInit };
     } catch (err) {
       console.error('添加项目失败:', err);
       throw err;
