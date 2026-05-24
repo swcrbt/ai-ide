@@ -542,18 +542,22 @@ function App() {
         >
           {{
             explorer: <FileTree onFileClick={async (path) => {
+              console.log('[App] onFileClick 被调用:', path);
               try {
                 const bytes = await ReadFile(path);
+                console.log('[App] ReadFile 返回:', bytes?.length, '字节');
                 if (!bytes || bytes.length === 0) {
+                  console.log('[App] 文件为空，打开空文件');
                   openFile(path, '');
                   setActiveFile(path);
                   return;
                 }
                 const content = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+                console.log('[App] 解码后内容长度:', content.length);
                 openFile(path, content);
                 setActiveFile(path);
               } catch (err) {
-                console.error('读取文件失败:', err);
+                console.error('[App] 读取文件失败:', err);
                 showAppToast(`读取文件失败: ${path}`);
               }
             }} />,

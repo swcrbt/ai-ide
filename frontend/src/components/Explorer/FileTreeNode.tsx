@@ -64,12 +64,15 @@ export function FileTreeNodeRow({ node, depth = 0, onFileClick }: FileTreeNodePr
   const isSelected = selectedPath === node.path;
 
   const handleClick = () => {
+    console.log('[FileTreeNodeRow] 点击节点:', node.path, 'isDir:', node.isDir);
     selectNode(node.path);
     if (node.isDir) {
       toggleNode(node.path);
     } else if (onFileClick) {
+      console.log('[FileTreeNodeRow] 调用 onFileClick:', node.path);
       onFileClick(node.path);
     } else {
+      console.log('[FileTreeNodeRow] 调用 openFile:', node.path);
       openFile(node.path, '');
     }
   };
