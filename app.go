@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/swcrbt/ai-ide/internal/ai"
 	"github.com/swcrbt/ai-ide/internal/config"
 	"github.com/swcrbt/ai-ide/internal/fs"
 	"github.com/swcrbt/ai-ide/internal/git"
+	"github.com/swcrbt/ai-ide/internal/project"
 	"github.com/swcrbt/ai-ide/internal/terminal"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -16,14 +19,19 @@ type App struct {
 	FileService     *fs.FileService
 	GitService      *git.GitService
 	TerminalService *terminal.TerminalService
+	ChatManager     *ai.ChatHistoryManager
+	ProjectService  *project.ProjectService
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
+	gitService := git.NewGitService()
 	return &App{
 		FileService:     fs.NewFileService(),
-		GitService:      git.NewGitService(),
+		GitService:      gitService,
 		TerminalService: terminal.NewTerminalService(),
+		ChatManager:     ai.NewChatHistoryManager(ai.NewProviderManager()),
+		ProjectService:  project.NewProjectService(gitService),
 	}
 }
 
@@ -48,6 +56,11 @@ func (a *App) startup(ctx context.Context) {
 	// 初始化终端服务
 	if a.TerminalService != nil {
 		a.TerminalService.Startup(ctx)
+	}
+
+	// 加载 AI 聊天历史
+	if a.ChatManager != nil {
+		_ = a.ChatManager.LoadAllSessionsFromDB()
 	}
 }
 
@@ -98,4 +111,62 @@ func (a *App) BranchExists(branch string) (bool, error) {
 		return false, fmt.Errorf("检查分支失败: %w", err)
 	}
 	return exists, nil
+}
+
+// CreateChatSession 创建新的 AI 聊天会话
+func (a *App) CreateChatSession() (string, error) {
+	if a.ChatManager == nil {
+		return "", fmt.Errorf("聊天管理器未初始化")
+	}
+	session, err := a.ChatManager.CreateSession()
+	if err != nil {
+		return "", fmt.Errorf("创建会话失败: %w", err)
+	}
+	return session.GetID(), nil
+}
+
+// SendChatMessage 发送消息到 AI，通过 Wails Events 流式返回结果
+// 事件名: ai:chunk:<sessionID>, ai:done:<sessionID>, ai:error:<sessionID>
+func (a *App) SendChatMessage(sessionID string, content string) error {
+	if a.ChatManager == nil {
+		return fmt.Errorf("聊天管理器未初始化")
+	}
+	session, ok := a.ChatManager.GetSession(sessionID)
+	if !ok {
+		return fmt.Errorf("会话不存在: %s", sessionID)
+	}
+
+	stream, err := session.SendMessage(a.ctx, content)
+	if err != nil {
+		return fmt.Errorf("发送消息失败: %w", err)
+	}
+
+	go func() {
+		for chunk := range stream {
+			if chunk.Error != nil {
+				wailsRuntime.EventsEmit(a.ctx, "ai:error:"+sessionID, chunk.Error.Error())
+				return
+			}
+			if chunk.Done {
+				wailsRuntime.EventsEmit(a.ctx, "ai:done:"+sessionID, "")
+				return
+			}
+			wailsRuntime.EventsEmit(a.ctx, "ai:chunk:"+sessionID, chunk.Content)
+		}
+	}()
+
+	return nil
+}
+
+// ClearChatMessages 清空会话消息历史
+func (a *App) ClearChatMessages(sessionID string) error {
+	if a.ChatManager == nil {
+		return fmt.Errorf("聊天管理器未初始化")
+	}
+	session, ok := a.ChatManager.GetSession(sessionID)
+	if !ok {
+		return fmt.Errorf("会话不存在: %s", sessionID)
+	}
+	session.ClearHistory()
+	return nil
 }
