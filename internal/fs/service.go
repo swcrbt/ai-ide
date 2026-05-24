@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -190,6 +191,16 @@ func (s *FileService) buildFileTree(node *FileNode) error {
 	if err != nil {
 		return fmt.Errorf("读取目录失败 %s: %w", node.Path, err)
 	}
+
+	// 排序：目录在前，文件在后，同类型按字母顺序
+	sort.Slice(entries, func(i, j int) bool {
+		iIsDir := entries[i].IsDir()
+		jIsDir := entries[j].IsDir()
+		if iIsDir != jIsDir {
+			return iIsDir // 目录排在前面
+		}
+		return entries[i].Name() < entries[j].Name() // 同类型按字母顺序
+	})
 
 	for _, entry := range entries {
 		info, err := entry.Info()
