@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { TerminalSquare, Bot, X, Minus } from 'lucide-react';
+import { TerminalSquare, Bot, Monitor, X, Minus } from 'lucide-react';
+import { useConsoleStore } from '../../stores/useConsoleStore';
+
+export type BottomTab = 'terminal' | 'ai' | 'console';
 
 export interface BottomPanelProps {
-  activeTab: 'terminal' | 'ai';
-  onTabChange: (tab: 'terminal' | 'ai') => void;
+  activeTab: BottomTab;
+  onTabChange: (tab: BottomTab) => void;
   onHide: () => void;
   children: {
     terminal: React.ReactNode;
     aiChat: React.ReactNode;
+    console: React.ReactNode;
   };
 }
 
@@ -67,10 +71,15 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   }, [isDragging]);
 
   const displayHeight = isMinimized ? MIN_HEIGHT : height;
-  const isTerminal = activeTab === 'terminal';
+
+  const { errorCount, warnCount } = useConsoleStore((s) => ({
+    errorCount: s.errorCount,
+    warnCount: s.warnCount,
+  }));
 
   const tabs = [
     { key: 'terminal' as const, label: '终端', icon: TerminalSquare },
+    { key: 'console' as const, label: '控制台', icon: Monitor },
     { key: 'ai' as const, label: 'AI 助手', icon: Bot },
   ];
 
@@ -109,6 +118,20 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
               >
                 <Icon size={14} />
                 <span>{tab.label}</span>
+                {tab.key === 'console' && (errorCount > 0 || warnCount > 0) && (
+                  <span className="ml-1 flex items-center gap-0.5">
+                    {errorCount > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white">
+                        {errorCount}
+                      </span>
+                    )}
+                    {warnCount > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[10px] font-bold rounded-full bg-yellow-500 text-white">
+                        {warnCount}
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -134,7 +157,9 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
 
       {!isMinimized && (
         <div className="flex-1 overflow-hidden">
-          {isTerminal ? children.terminal : children.aiChat}
+          {activeTab === 'terminal' ? children.terminal
+            : activeTab === 'console' ? children.console
+              : children.aiChat}
         </div>
       )}
     </div>
