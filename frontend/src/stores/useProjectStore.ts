@@ -79,7 +79,17 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
     set({ isLoading: true, error: null });
     try {
       const projects = await ListProjects();
-      set({ projects: projects || [], isLoading: false });
+      const projectList = projects || [];
+      // 如果有项目且没有当前项目，自动选择第一个
+      if (projectList.length > 0 && !get().currentProject) {
+        set({ 
+          projects: projectList, 
+          currentProject: projectList[0],
+          isLoading: false 
+        });
+      } else {
+        set({ projects: projectList, isLoading: false });
+      }
     } catch (err: any) {
       const errorMsg = err?.message || '加载项目列表失败';
       console.error('加载项目列表失败:', err);

@@ -110,6 +110,19 @@ export async function mockWailsRuntime(page: Page): Promise<void> {
           SaveSettings: () => Promise.resolve(),
           ResetSettings: () => Promise.resolve(),
           Greet: (name: string) => Promise.resolve(`Hello ${name}`),
+          ListProjects: () => Promise.resolve([
+            {
+              id: 1,
+              name: 'ai-ide',
+              path: '/project',
+              createdAt: '2026-05-23T10:00:00Z',
+              updatedAt: '2026-05-23T10:00:00Z',
+            },
+          ]),
+          AddProject: () => Promise.resolve({ project: null, needsInit: false }),
+          SetCurrentProject: () => Promise.resolve(),
+          RemoveProject: () => Promise.resolve(),
+          InitGitAndSave: () => Promise.resolve({ id: 1, name: 'test', path: '/project', createdAt: '', updatedAt: '' }),
           CreateChatSession: () => Promise.resolve('mock-session-' + Date.now()),
           SendChatMessage: (_sessionID: string, content: string) => {
             // 模拟流式回复：通过 EventsEmit 分块发送
