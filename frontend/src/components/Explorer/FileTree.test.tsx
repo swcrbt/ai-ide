@@ -34,6 +34,25 @@ vi.mock('../../stores/useEditorStore', () => ({
   }),
 }));
 
+vi.mock('../../stores/useProjectStore', () => ({
+  useProjectStore: vi.fn((selector) => {
+    const state = {
+      projects: [],
+      currentProject: { id: 1, name: 'test-project', path: '/project', createdAt: '', updatedAt: '' },
+      isLoading: false,
+      isAddDialogOpen: false,
+      loadProjects: vi.fn(),
+      switchProject: vi.fn(),
+      removeProject: vi.fn(),
+      setAddDialogOpen: vi.fn(),
+    };
+    if (typeof selector === 'function') {
+      return selector(state);
+    }
+    return state;
+  }),
+}));
+
 function createMockFileNode(overrides: Partial<FileNode> = {}): FileNode {
   return {
     name: 'file.txt',
@@ -142,7 +161,7 @@ describe('FileTree', () => {
 
       render(<FileTree onFileClick={mockOnFileClick} />);
 
-      expect(screen.getByText('my-awesome-project')).toBeInTheDocument();
+      expect(screen.getByText('test-project')).toBeInTheDocument();
     });
 
     it('应渲染顶层文件节点', () => {
