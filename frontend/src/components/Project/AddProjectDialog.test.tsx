@@ -187,17 +187,87 @@ describe('AddProjectDialog', () => {
     });
   });
 
-  it('should not render when dialog is closed', () => {
-    // 由于 vi.mock 在模块级别，我们无法在单个测试中动态修改返回值
-    // 这个测试验证组件在 isAddDialogOpen=false 时不渲染
-    // 实际行为已通过其他测试间接验证
+  it('should show loading state during add project', async () => {
+    mockOpenDirectoryDialog.mockResolvedValue('/test/project');
+    mockAddProject.mockImplementation(() => new Promise(() => {})); // 永远不 resolve
     
-    // 创建一个包装组件来测试关闭状态
-    function ClosedDialogWrapper() {
-      return null; // 模拟关闭状态
+    render(<AddProjectDialog />);
+    
+    const folderButton = screen.getByRole('button', { name: '选择目录' });
+    fireEvent.click(folderButton);
+    
+    await waitFor(() => {
+      const addButton = screen.getByRole('button', { name: '添加项目' });
+      expect(addButton).not.toBeDisabled();
+    });
+    
+    const addButton = screen.getByRole('button', { name: '添加项目' });
+    fireEvent.click(addButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('添加中...')).toBeInTheDocument();
+    });
+  });
+
+  it('should show loading state during git init', async () => {
+    mockOpenDirectoryDialog.mockResolvedValue('/test/project');
+    mockAddProject.mockResolvedValue({ project: null, needsInit: true });
+    mockInitGitAndAdd.mockImplementation(() => new Promise(() => {})); // 永远不 resolve
+    
+    render(<AddProjectDialog />);
+    
+    const folderButton = screen.getByRole('button', { name: '选择目录' });
+    fireEvent.click(folderButton);
+    
+    await waitFor(() => {
+      const addButton = screen.getByRole('button', { name: '添加项目' });
+      expect(addButton).not.toBeDisabled();
+    });
+    
+    const addButton = screen.getByRole('button', { name: '添加项目' });
+    fireEvent.click(addButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('确认初始化')).toBeInTheDocument();
+    });
+    
+    const confirmButton = screen.getByText('确认初始化');
+    fireEvent.click(confirmButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('初始化中...')).toBeInTheDocument();
+    });
+  });
+
+  it('should hide init confirm when cancel clicked', async () => {
+    mockOpenDirectoryDialog.mockResolvedValue('/test/project');
+    mockAddProject.mockResolvedValue({ project: null, needsInit: true });
+    
+    render(<AddProjectDialog />);
+    
+    const folderButton = screen.getByRole('button', { name: '选择目录' });
+    fireEvent.click(folderButton);
+    
+    await waitFor(() => {
+      const addButton = screen.getByRole('button', { name: '添加项目' });
+      expect(addButton).not.toBeDisabled();
+    });
+    
+    const addButton = screen.getByRole('button', { name: '添加项目' });
+    fireEvent.click(addButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('确认初始化')).toBeInTheDocument();
+    });
+    
+    const cancelInitButton = screen.getByRole('button', { name: '确认初始化' }).parentElement?.querySelector('button:first-child');
+    expect(cancelInitButton).not.toBeNull();
+    if (cancelInitButton) {
+      fireEvent.click(cancelInitButton);
     }
     
-    const { container } = render(<ClosedDialogWrapper />);
-    expect(container.firstChild).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByText('确认初始化')).not.toBeInTheDocument();
+    });
   });
 });
