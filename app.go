@@ -170,3 +170,28 @@ func (a *App) ClearChatMessages(sessionID string) error {
 	session.ClearHistory()
 	return nil
 }
+
+// ListProjects 获取项目列表
+func (a *App) ListProjects() ([]project.Project, error) {
+	return a.ProjectService.ListProjects()
+}
+
+// AddProject 添加新项目
+func (a *App) AddProject(path string) (*project.Project, bool, error) {
+	return a.ProjectService.AddProject(path)
+}
+
+// InitGitAndSave 初始化 Git 并保存项目
+func (a *App) InitGitAndSave(path string) (*project.Project, error) {
+	return a.ProjectService.InitGitAndSave(path)
+}
+
+// RemoveProject 删除项目
+func (a *App) RemoveProject(id int64) error {
+	return a.ProjectService.RemoveProject(id)
+}
+
+// SetCurrentProject 设置当前项目
+func (a *App) SetCurrentProject(path string) error {
+	return a.ProjectService.SetCurrentProject(path)
+}
