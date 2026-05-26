@@ -35,3 +35,6 @@ frontend/.omc/
 
 # Sisyphus local state
 .sisyphus/
+
+# Omo local state
+.omo/
