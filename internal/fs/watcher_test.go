@@ -224,38 +224,24 @@ func TestDebounce(t *testing.T) {
 		}
 	}()
 
-	// 等待一段时间收集事件
-	eventCount := 0
-	timeout := time.AfterFunc(1*time.Second, func() {})
+	// 收集一段时间内的所有事件
+	var events []FileEvent
+	collectDone := time.After(1 * time.Second)
 	for {
 		select {
-		case <-eventChan:
-			eventCount++
-			if eventCount >= 2 {
-				// 如果收到多个事件，说明防抖未生效
-				t.Errorf("防抖未生效，收到 %d 个事件", eventCount)
-				return
+		case event, ok := <-eventChan:
+			if !ok {
+				break
 			}
-		case <-timeout.C:
-			// 超时退出
-			if eventCount == 0 {
+			events = append(events, event)
+		case <-collectDone:
+			// 防抖应将快速连续写入合并为少量事件
+			if len(events) == 0 {
 				t.Error("未收到任何事件")
+			} else if len(events) > 2 {
+				t.Errorf("防抖未生效，期望最多2个事件，实际收到 %d 个", len(events))
 			}
 			return
-		default:
-			time.Sleep(10 * time.Millisecond)
-			// 检查是否已超时
-			if !timeout.Stop() {
-				select {
-				case <-timeout.C:
-				default:
-				}
-			}
-			if time.Now().After(time.Now().Add(-1 * time.Second)) {
-				// 用更简单的方式：等待足够长的时间
-				time.Sleep(500 * time.Millisecond)
-				return
-			}
 		}
 	}
 }

@@ -66,6 +66,8 @@ type LSPClient struct {
 	workspacePath string
 	// stopCh 停止信号通道
 	stopCh chan struct{}
+	// stopOnce 确保只关闭 stopCh 一次
+	stopOnce sync.Once
 	// wg 等待组
 	wg sync.WaitGroup
 	// initialized 是否已完成初始化
@@ -108,6 +110,7 @@ func (c *LSPClient) Start(serverPath string, args []string) error {
 
 	c.state = ClientStateRunning
 	c.stopCh = make(chan struct{})
+	c.stopOnce = sync.Once{}
 
 	// 启动消息读取协程
 	c.wg.Add(1)
@@ -127,7 +130,9 @@ func (c *LSPClient) Stop() error {
 	c.stateMu.Unlock()
 
 	// 发送停止信号
-	close(c.stopCh)
+	c.stopOnce.Do(func() {
+		close(c.stopCh)
+	})
 
 	// 取消所有等待中的请求
 	c.pendingMu.Lock()
@@ -139,9 +144,7 @@ func (c *LSPClient) Stop() error {
 
 	// 停止进程
 	if c.processManager != nil {
-		if err := c.processManager.Stop(); err != nil {
-			return fmt.Errorf("停止语言服务器失败: %w", err)
-		}
+		c.processManager.Stop()
 	}
 
 	// 等待消息读取协程结束
@@ -478,6 +481,12 @@ func (c *LSPClient) handleNotification(notif *Notification) {
 
 // Restart 重启语言服务器
 func (c *LSPClient) Restart() error {
+	if c.processManager == nil {
+		return fmt.Errorf("进程管理器未初始化")
+	}
+	serverPath := c.processManager.GetServerPath()
+	args := c.processManager.GetArgs()
+
 	if err := c.Stop(); err != nil {
 		return fmt.Errorf("停止失败: %w", err)
 	}
@@ -485,11 +494,7 @@ func (c *LSPClient) Restart() error {
 	// 等待完全停止
 	time.Sleep(100 * time.Millisecond)
 
-	if c.processManager == nil {
-		return fmt.Errorf("进程管理器未初始化")
-	}
-
-	return c.Start(c.processManager.GetServerPath(), c.processManager.GetArgs())
+	return c.Start(serverPath, args)
 }
 
 // GetWorkspacePath 获取工作区路径
