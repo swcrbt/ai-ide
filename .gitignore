@@ -29,3 +29,9 @@ playwright-report/
 # OMC (oh-my-claudecode) local state
 .omc/
 frontend/.omc/
+
+# OpenCode local state
+.opencode/
+
+# Sisyphus local state
+.sisyphus/
