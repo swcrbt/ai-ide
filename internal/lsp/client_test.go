@@ -376,7 +376,6 @@ func TestLSPClient_ConcurrentOperations(t *testing.T) {
 
 // TestProcessManager_CrashRecovery 测试进程异常退出处理
 func TestProcessManager_CrashRecovery(t *testing.T) {
-	// 创建一个会立即退出的假服务器
 	tmpDir := t.TempDir()
 	serverPath := filepath.Join(tmpDir, "crash_server")
 	if runtime.GOOS == "windows" {
@@ -396,10 +395,15 @@ func main() {}`
 		t.Fatalf("启动失败: %v", err)
 	}
 
-	// 等待进程退出
-	time.Sleep(500 * time.Millisecond)
+	// 等待进程退出（轮询 running 状态）
+ deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if !pm.IsRunning() {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
-	// 进程应该已经退出
 	if pm.IsRunning() {
 		t.Error("崩溃的进程不应处于运行状态")
 	}
