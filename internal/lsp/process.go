@@ -32,6 +32,10 @@ type ProcessManager struct {
 	running bool
 	// stopCh 停止信号通道
 	stopCh chan struct{}
+	// stopOnce 确保只关闭 stopCh 一次
+	stopOnce sync.Once
+	// wg 等待组跟踪 monitor goroutine
+	wg sync.WaitGroup
 }
 
 // NewProcessManager 创建进程管理器
@@ -87,51 +91,58 @@ func (pm *ProcessManager) Start() error {
 
 	pm.running = true
 	pm.stopCh = make(chan struct{})
+	pm.stopOnce = sync.Once{}
 
-	// 启动错误输出监控协程
-	go pm.monitorStderr()
-
-	// 启动进程监控协程
-	go pm.monitorProcess()
+	pm.wg.Add(2)
+	go func() {
+		defer pm.wg.Done()
+		pm.monitorStderr()
+	}()
+	go func() {
+		defer pm.wg.Done()
+		pm.monitorProcess()
+	}()
 
 	return nil
 }
 
-// Stop 优雅停止语言服务器进程
+// Stop 停止语言服务器进程
 func (pm *ProcessManager) Stop() error {
 	pm.mu.Lock()
-	defer pm.mu.Unlock()
-
 	if !pm.running {
+		pm.mu.Unlock()
 		return nil
 	}
+	pm.running = false
 
-	// 发送停止信号
-	close(pm.stopCh)
+	pm.stopOnce.Do(func() {
+		close(pm.stopCh)
+	})
 
-	// 尝试优雅关闭：先发送中断信号
 	if pm.cmd != nil && pm.cmd.Process != nil {
 		_ = pm.cmd.Process.Signal(syscall.SIGINT)
 	}
+	pm.mu.Unlock()
 
-	// 等待进程退出或超时
-	done := make(chan error, 1)
+	done := make(chan struct{})
 	go func() {
-		done <- pm.cmd.Wait()
+		pm.wg.Wait()
+		close(done)
 	}()
 
 	select {
 	case <-done:
-		// 进程正常退出
 	case <-time.After(5 * time.Second):
-		// 超时，强制终止
-		if pm.cmd != nil && pm.cmd.Process != nil {
-			_ = pm.cmd.Process.Kill()
+		pm.mu.RLock()
+		cmd := pm.cmd
+		pm.mu.RUnlock()
+		if cmd != nil && cmd.Process != nil {
+			cmd.Process.Kill()
 		}
 		<-done
 	}
 
-	// 关闭管道
+	pm.mu.Lock()
 	if pm.stdin != nil {
 		pm.stdin.Close()
 	}
@@ -141,9 +152,8 @@ func (pm *ProcessManager) Stop() error {
 	if pm.stderr != nil {
 		pm.stderr.Close()
 	}
-
-	pm.running = false
 	pm.cmd = nil
+	pm.mu.Unlock()
 
 	return nil
 }
@@ -220,13 +230,10 @@ func (pm *ProcessManager) monitorProcess() {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	// 如果进程异常退出且不是用户主动停止，记录日志
-	if err != nil && pm.running {
+	if err != nil {
 		select {
 		case <-pm.stopCh:
-			// 用户主动停止，忽略错误
 		default:
-			// 进程异常退出
 			fmt.Printf("语言服务器进程异常退出: %v\n", err)
 		}
 	}
