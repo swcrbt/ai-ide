@@ -1,7 +1,7 @@
 package project
 
 import (
-	"os"
+	"database/sql"
 	"path/filepath"
 	"testing"
 
@@ -9,21 +9,44 @@ import (
 	"github.com/swcrbt/ai-ide/internal/git"
 )
 
-func TestMain(m *testing.M) {
-	// 初始化测试数据库
-	if err := config.InitDatabase(); err != nil {
-		panic(err)
+// setupTestDB 创建隔离的测试数据库，不污染生产环境
+func setupTestDB(t *testing.T) (*sql.DB, func()) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test.db")
+
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		t.Fatalf("打开测试数据库失败: %v", err)
 	}
-	defer config.CloseDatabase()
 
-	// 清理测试数据
-	config.DB.Exec("DELETE FROM projects")
+	// 创建表结构（与生产一致）
+	for _, table := range []string{
+		`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+		`CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, path TEXT NOT NULL UNIQUE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+		`CREATE TABLE IF NOT EXISTS chat_sessions (id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '新对话', provider TEXT NOT NULL, model TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+		`CREATE TABLE IF NOT EXISTS conversations (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL, provider TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE)`,
+	} {
+		if _, err := db.Exec(table); err != nil {
+			t.Fatalf("创建表失败: %v", err)
+		}
+	}
 
-	os.Exit(m.Run())
+	// 临时替换全局 DB
+	oldDB := config.DB
+	config.DB = db
+	cleanup := func() {
+		config.DB = oldDB
+		db.Close()
+	}
+
+	return db, cleanup
 }
 
 func TestAddProject_WithGitRepo(t *testing.T) {
-	// 创建临时目录并初始化 Git
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	tmpDir := t.TempDir()
 	gitService := git.NewGitService()
 	if err := gitService.Init(tmpDir); err != nil {
@@ -48,6 +71,9 @@ func TestAddProject_WithGitRepo(t *testing.T) {
 }
 
 func TestAddProject_WithoutGitRepo(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	tmpDir := t.TempDir()
 	gitService := git.NewGitService()
 	service := NewProjectService(gitService)
@@ -65,6 +91,9 @@ func TestAddProject_WithoutGitRepo(t *testing.T) {
 }
 
 func TestInitGitAndSave(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	tmpDir := t.TempDir()
 	gitService := git.NewGitService()
 	service := NewProjectService(gitService)
@@ -84,6 +113,9 @@ func TestInitGitAndSave(t *testing.T) {
 }
 
 func TestAddProject_Duplicate(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	tmpDir := t.TempDir()
 	gitService := git.NewGitService()
 	gitService.Init(tmpDir)
@@ -107,6 +139,9 @@ func TestAddProject_Duplicate(t *testing.T) {
 }
 
 func TestAddProject_InvalidPath(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	gitService := git.NewGitService()
 	service := NewProjectService(gitService)
 
@@ -117,8 +152,8 @@ func TestAddProject_InvalidPath(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	// 清理
-	config.DB.Exec("DELETE FROM projects")
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
 
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
@@ -140,6 +175,9 @@ func TestListProjects(t *testing.T) {
 }
 
 func TestRemoveProject(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	tmpDir := t.TempDir()
 	gitService := git.NewGitService()
 	gitService.Init(tmpDir)
@@ -160,6 +198,9 @@ func TestRemoveProject(t *testing.T) {
 }
 
 func TestSetCurrentProject(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+
 	tmpDir := t.TempDir()
 	gitService := git.NewGitService()
 	gitService.Init(tmpDir)

@@ -34,7 +34,42 @@ import type { ConsoleEntry } from './stores/useConsoleStore';
 import { TaskCard } from './components/Task/TaskCard';
 import { TaskCreateDialog } from './components/Task/TaskCreateDialog';
 import { BranchExists, CreateBranch } from './types/wails';
-import { ReadFile } from '../wailsjs/go/fs/FileService';
+import { ReadFile, FileSize } from '../wailsjs/go/fs/FileService';
+import { LargeFileDialog } from './components/Editor/LargeFileDialog';
+import { LARGE_FILE_THRESHOLD } from './components/Editor/editorMode';
+
+/**
+ * Read file content through Wails IPC.
+ *
+ * Wails serializes Go's []byte return via json.Marshal, which encodes it as
+ * a base64 string. The generated .d.ts says Array<number> but at runtime the
+ * value is a base64 string. Handle both formats defensively.
+ */
+async function readFileContent(path: string): Promise<string> {
+  // Wails json.Marshal([]byte) produces base64 string at runtime,
+  // but the auto-generated .d.ts says Array<number>. Cast defensively.
+  const bytes = await ReadFile(path) as unknown;
+  if (!bytes) return '';
+
+  // Base64 string (actual Wails runtime behavior)
+  if (typeof bytes === 'string') {
+    if (bytes.length === 0) return '';
+    const binary = atob(bytes);
+    return new TextDecoder('utf-8').decode(
+      Uint8Array.from(binary, (c) => c.charCodeAt(0))
+    );
+  }
+
+  // Array<number> (what the .d.ts claims — handle just in case)
+  if (Array.isArray(bytes)) {
+    const arr = bytes as number[];
+    if (arr.length > 0) {
+      return new TextDecoder('utf-8').decode(new Uint8Array(arr));
+    }
+  }
+
+  return '';
+}
 
 // 动态导入大型组件，减少初始加载时间
 const Editor = lazy(() => import('./components/Editor/Editor'));
@@ -105,6 +140,7 @@ function App() {
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [taskCreateOpen, setTaskCreateOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [pendingLargeFile, setPendingLargeFile] = useState<{ path: string; size: number } | null>(null);
 
   const {
     shortcuts,
@@ -121,33 +157,16 @@ function App() {
 
   // 安装 console 劫持（仅一次）
   useEffect(() => {
-    const store = useConsoleStore.getState();
+    const store = useConsoleStore;
 
-    // 序列化参数（安全处理循环引用和 Symbol）
-    function safeStringify(value: unknown): string {
-      try {
-        if (value === null) return 'null';
-        if (value === undefined) return 'undefined';
-        if (typeof value === 'object') {
-          return JSON.stringify(value);
-        }
-        return String(value);
-      } catch {
-        return '[无法序列化]';
-      }
-    }
-
-    // 劫持 console 方法
-    // 使用 requestAnimationFrame 批量推送，避免渲染期间更新 store 导致无限循环
     const methods = ['log', 'error', 'warn', 'info', 'debug'] as const;
     const originals: Record<string, (...args: unknown[]) => void> = {};
 
-    // 待推送条目队列 + RAF 防抖标记
     let pendingEntries: Array<{
-      level: ConsoleEntry['level'];
+      level: (typeof methods)[number];
       message: string;
-      args: unknown[];
       timestamp: number;
+      args: unknown[];
     }> = [];
     let rafId = 0;
 
@@ -155,77 +174,73 @@ function App() {
       const entries = pendingEntries;
       pendingEntries = [];
       rafId = 0;
-      entries.forEach((entry) => {
-        store.addEntry({
-          ...entry,
-          source: 'console',
-        });
-      });
+      if (entries.length > 0) {
+        store.getState().addEntries(
+          entries.map((entry) => ({
+            ...entry,
+            source: 'console' as const,
+          }))
+        );
+      }
     }
 
     methods.forEach((method) => {
-      const consoleObj = console as unknown as Record<string, (...args: unknown[]) => void>;
+      const consoleObj = console as unknown as Record<
+        string,
+        (...args: unknown[]) => void
+      >;
+
+      // 防止 HMR/StrictMode 重复劫持
+      if ((consoleObj[method] as unknown as Record<string, boolean>).__isHijacked) {
+        return;
+      }
+
       originals[method] = consoleObj[method].bind(console);
 
-      consoleObj[method] = (...args: unknown[]) => {
-        // 调用原始方法（已通过 bind 绑定 console 为 this）
+      const hijacked = (...args: unknown[]) => {
         originals[method](...args);
 
-        // 批量推送条目（通过 RAF 延迟，防止 React 渲染循环）
-        const message = args.map(safeStringify).join(' ');
+        const message = args
+          .map((arg) => {
+            try {
+              return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+            } catch {
+              return String(arg);
+            }
+          })
+          .join(' ');
+
         pendingEntries.push({
           level: method,
-          message: message.length > 500 ? message.slice(0, 500) + '...' : message,
-          args,
+          message,
           timestamp: Date.now(),
+          args,
         });
 
-        if (!rafId) {
+        if (rafId === 0) {
           rafId = requestAnimationFrame(flushPendingEntries);
         }
       };
+
+      (hijacked as unknown as Record<string, boolean>).__isHijacked = true;
+      consoleObj[method] = hijacked;
     });
 
-    // 捕获未处理的同步异常
-    const prevOnError = window.onerror;
-    window.onerror = (msg, url, line, col, error) => {
-      store.addEntry({
-        level: 'error',
-        message: error instanceof Error
-          ? `${error.name}: ${error.message} (${url}:${line}:${col})`
-          : `${String(msg)} (${url}:${line}:${col})`,
-        timestamp: Date.now(),
-        source: 'error',
-        args: [error],
-      });
-      if (prevOnError) {
-        prevOnError.call(window, msg, url, line, col, error);
-      }
-      return false;
-    };
-
-    // 捕获未处理的 Promise 拒绝
-    const prevOnUnhandled = window.onunhandledrejection;
-    window.onunhandledrejection = (event) => {
-      store.addEntry({
-        level: 'error',
-        message: `未处理的 Promise 拒绝: ${safeStringify(event.reason)}`,
-        timestamp: Date.now(),
-        source: 'unhandledrejection',
-        args: [event.reason],
-      });
-      if (prevOnUnhandled) {
-        prevOnUnhandled.call(window, event);
-      }
-    };
-
-    // 清理函数（恢复原始方法）
     return () => {
       methods.forEach((method) => {
-        (console as unknown as Record<string, (...args: unknown[]) => void>)[method] = originals[method];
+        const consoleObj = console as unknown as Record<
+          string,
+          (...args: unknown[]) => void
+        >;
+        if (
+          (consoleObj[method] as unknown as Record<string, boolean>).__isHijacked
+        ) {
+          consoleObj[method] = originals[method];
+        }
       });
-      window.onerror = prevOnError;
-      window.onunhandledrejection = prevOnUnhandled;
+      if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
+      }
     };
   }, []);
 
@@ -526,6 +541,43 @@ function App() {
     }
   }
 
+  async function handleFileOpen(path: string, size?: number) {
+    try {
+      const content = await readFileContent(path);
+      openFile(path, content, undefined, size);
+      setActiveFile(path);
+    } catch (err) {
+      console.error('[App] 读取文件失败:', err);
+      showAppToast(`读取文件失败: ${path}`);
+    }
+  }
+
+  async function onFileClick(path: string) {
+    try {
+      const size = await FileSize(path);
+      if (size >= LARGE_FILE_THRESHOLD) {
+        setPendingLargeFile({ path, size });
+      } else {
+        await handleFileOpen(path, size);
+      }
+    } catch (err) {
+      // FileSize 失败时仍尝试直接打开
+      console.error('[App] FileSize 调用失败，直接打开:', err);
+      await handleFileOpen(path);
+    }
+  }
+
+  async function handleLargeFileConfirm() {
+    if (!pendingLargeFile) return;
+    const { path, size } = pendingLargeFile;
+    setPendingLargeFile(null);
+    await handleFileOpen(path, size);
+  }
+
+  function handleLargeFileCancel() {
+    setPendingLargeFile(null);
+  }
+
   useEffect(() => {
     initTheme();
   }, []);
@@ -654,42 +706,8 @@ function App() {
           onToolChange={setRightTool}
         >
           {{
-            explorer: <FileTree onFileClick={async (path) => {
-              console.log('[App] onFileClick 被调用:', path);
-              try {
-                const bytes = await ReadFile(path);
-                console.log('[App] ReadFile 返回:', bytes?.length, '字节');
-                if (!bytes || bytes.length === 0) {
-                  console.log('[App] 文件为空，打开空文件');
-                  openFile(path, '');
-                  setActiveFile(path);
-                  return;
-                }
-                const content = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
-                console.log('[App] 解码后内容长度:', content.length);
-                openFile(path, content);
-                setActiveFile(path);
-              } catch (err) {
-                console.error('[App] 读取文件失败:', err);
-                showAppToast(`读取文件失败: ${path}`);
-              }
-            }} />,
-            search: <SearchPanel onFileClick={async (path) => {
-              try {
-                const bytes = await ReadFile(path);
-                if (!bytes || bytes.length === 0) {
-                  openFile(path, '');
-                  setActiveFile(path);
-                  return;
-                }
-                const content = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
-                openFile(path, content);
-                setActiveFile(path);
-              } catch (err) {
-                console.error('读取文件失败:', err);
-                showAppToast(`读取文件失败: ${path}`);
-              }
-            }} />,
+            explorer: <FileTree onFileClick={onFileClick} />,
+            search: <SearchPanel onFileClick={onFileClick} />,
           }}
         </RightPanel>
       </div>
@@ -735,6 +753,14 @@ function App() {
         isOpen={taskCreateOpen}
         onClose={() => setTaskCreateOpen(false)}
         onCreate={handleCreateTask}
+      />
+
+      <LargeFileDialog
+        open={pendingLargeFile !== null}
+        filePath={pendingLargeFile?.path || ''}
+        fileSize={pendingLargeFile?.size || 0}
+        onConfirm={handleLargeFileConfirm}
+        onCancel={handleLargeFileCancel}
       />
     </div>
   );

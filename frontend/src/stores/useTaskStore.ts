@@ -54,32 +54,6 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function getDefaultTasks(): Task[] {
-  const now = Date.now();
-  return [
-    {
-      id: 'task-1',
-      title: '实现用户登录功能',
-      branch: 'feature/login',
-      status: 'in_progress',
-      tag: 'feature',
-      tagColor: '#3b82f6',
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: 'task-2',
-      title: '修复首页加载慢的问题',
-      branch: 'bug/slow-loading',
-      status: 'pending',
-      tag: 'BUG',
-      tagColor: '#ef4444',
-      createdAt: now,
-      updatedAt: now,
-    },
-  ];
-}
-
 interface TaskState {
   tasks: Task[];
   activeTaskId: string | null;
@@ -96,7 +70,7 @@ interface TaskState {
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
-  tasks: getDefaultTasks(),
+  tasks: [],
   activeTaskId: null,
   customTags: loadCustomTagsFromStorage(),
 

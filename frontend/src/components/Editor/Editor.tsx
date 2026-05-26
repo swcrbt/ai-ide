@@ -6,75 +6,7 @@ import { useEditorStore } from '../../stores/useEditorStore';
 import { TabBar } from './TabBar';
 import { DiffViewer } from './DiffViewer';
 import { useLSP } from './LSPProvider';
-
-/**
- * 编辑器模式类型
- */
-type EditorMode = 'full' | 'basic' | 'highlight-only' | 'plaintext';
-
-/**
- * 大文件降级配置
- */
-const MODE_CONFIG: Record<
-  EditorMode,
-  {
-    label: string;
-    description: string;
-    maxSize: number;
-    enableLSP: boolean;
-    enableComplexAnalysis: boolean;
-    enableHighlight: boolean;
-  }
-> = {
-  full: {
-    label: '完整模式',
-    description: '完整的 LSP 功能，包括自动补全、跳转定义、查找引用',
-    maxSize: 10 * 1024 * 1024, // 10MB
-    enableLSP: true,
-    enableComplexAnalysis: true,
-    enableHighlight: true,
-  },
-  basic: {
-    label: '基础模式',
-    description: '基础 LSP 功能，禁用复杂分析',
-    maxSize: 50 * 1024 * 1024, // 50MB
-    enableLSP: true,
-    enableComplexAnalysis: false,
-    enableHighlight: true,
-  },
-  'highlight-only': {
-    label: '语法高亮模式',
-    description: '仅语法高亮，禁用 LSP',
-    maxSize: 100 * 1024 * 1024, // 100MB
-    enableLSP: false,
-    enableComplexAnalysis: false,
-    enableHighlight: true,
-  },
-  plaintext: {
-    label: '纯文本模式',
-    description: '纯文本编辑，无语法高亮和 LSP',
-    maxSize: Infinity,
-    enableLSP: false,
-    enableComplexAnalysis: false,
-    enableHighlight: false,
-  },
-};
-
-/**
- * 根据文件大小获取编辑器模式
- */
-function getEditorMode(fileSize?: number): EditorMode {
-  if (!fileSize || fileSize < MODE_CONFIG.full.maxSize) {
-    return 'full';
-  }
-  if (fileSize < MODE_CONFIG.basic.maxSize) {
-    return 'basic';
-  }
-  if (fileSize < MODE_CONFIG['highlight-only'].maxSize) {
-    return 'highlight-only';
-  }
-  return 'plaintext';
-}
+import { MODE_CONFIG, getEditorMode, type EditorMode } from './editorMode';
 
 /**
  * 多标签 Monaco Editor 组件
@@ -266,6 +198,17 @@ export default function Editor() {
     };
   }, [activeTab, activeTabData, closeDocument, openDocument, registerEditor, cleanup, modeConfig.enableLSP]);
 
+  // 防御性修复：确保 Monaco Editor 内容与 store 同步
+  // 某些边界情况下 @monaco-editor/react 的 value prop 不会正确更新编辑器内容
+  useEffect(() => {
+    if (editorRef.current && activeTabData) {
+      const currentValue = editorRef.current.getValue();
+      if (currentValue !== activeTabData.content) {
+        editorRef.current.setValue(activeTabData.content);
+      }
+    }
+  }, [activeTab, activeTabData]);
+
   // 切换标签页时显示降级提示
   useEffect(() => {
     setShowDegradeHint(true);
@@ -313,6 +256,7 @@ export default function Editor() {
           />
         ) : activeTabData ? (
           <MonacoEditor
+            path={activeTabData.path}
             theme={monacoTheme}
             language={effectiveLanguage}
             value={activeTabData.content}

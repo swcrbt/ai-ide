@@ -27,6 +27,7 @@ interface ConsoleState {
   warnCount: number;
 
   addEntry: (entry: Omit<ConsoleEntry, 'id'>) => void;
+  addEntries: (entries: Omit<ConsoleEntry, 'id'>[]) => void;
   clear: () => void;
   setFilterLevel: (level: ConsoleEntry['level'], enabled: boolean) => void;
   setSearchQuery: (query: string) => void;
@@ -58,6 +59,26 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
       // 如果不是当前遍历的错误/警告，递增角标
       const errorCount = entry.level === 'error' ? state.errorCount + 1 : state.errorCount;
       const warnCount = entry.level === 'warn' ? state.warnCount + 1 : state.warnCount;
+
+      return { entries, errorCount, warnCount };
+    });
+  },
+
+  addEntries: (newEntries) => {
+    if (newEntries.length === 0) return;
+    set((state) => {
+      let entries = [...state.entries];
+      let errorCount = state.errorCount;
+      let warnCount = state.warnCount;
+
+      for (const entry of newEntries) {
+        const newEntry: ConsoleEntry = { ...entry, id: nextId++ };
+        entries = entries.length >= MAX_ENTRIES
+          ? [...entries.slice(1), newEntry]
+          : [...entries, newEntry];
+        errorCount = entry.level === 'error' ? errorCount + 1 : errorCount;
+        warnCount = entry.level === 'warn' ? warnCount + 1 : warnCount;
+      }
 
       return { entries, errorCount, warnCount };
     });

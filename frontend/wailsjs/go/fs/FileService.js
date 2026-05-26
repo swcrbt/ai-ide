@@ -14,6 +14,10 @@ export function DeleteFile(arg1) {
   return window['go']['fs']['FileService']['DeleteFile'](arg1);
 }
 
+export function FileSize(arg1) {
+  return window['go']['fs']['FileService']['FileSize'](arg1);
+}
+
 export function GetEventChannel() {
   return window['go']['fs']['FileService']['GetEventChannel']();
 }

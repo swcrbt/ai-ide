@@ -116,7 +116,15 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     const existingTab = tabs.find((t) => t.path === path);
 
     if (existingTab) {
-      set({ activeTab: path });
+      // 如果提供了新内容且与现有内容不同，刷新内容
+      if (content !== undefined && content !== existingTab.content) {
+        const newTabs = tabs.map((t) =>
+          t.path === path ? { ...t, content, isDirty: false } : t
+        );
+        set({ tabs: newTabs, activeTab: path });
+      } else {
+        set({ activeTab: path });
+      }
       return;
     }
 

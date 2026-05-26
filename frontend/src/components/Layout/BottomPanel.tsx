@@ -72,10 +72,8 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
 
   const displayHeight = isMinimized ? MIN_HEIGHT : height;
 
-  const { errorCount, warnCount } = useConsoleStore((s) => ({
-    errorCount: s.errorCount,
-    warnCount: s.warnCount,
-  }));
+  const errorCount = useConsoleStore((s) => s.errorCount);
+  const warnCount = useConsoleStore((s) => s.warnCount);
 
   const tabs = [
     { key: 'terminal' as const, label: '终端', icon: TerminalSquare },

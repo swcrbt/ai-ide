@@ -8,6 +8,8 @@ export function CreateFile(arg1:string,arg2:boolean):Promise<void>;
 
 export function DeleteFile(arg1:string):Promise<void>;
 
+export function FileSize(arg1:string):Promise<number>;
+
 export function GetEventChannel():Promise<any>;
 
 export function GetFileTree(arg1:string):Promise<fs.FileNode>;

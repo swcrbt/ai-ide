@@ -43,8 +43,8 @@ describe('useEditorStore', () => {
       const state = useEditorStore.getState();
       expect(state.tabs).toHaveLength(2);
       expect(state.activeTab).toBe('/test/file1.ts');
-      // 已存在的标签页内容不应被覆盖
-      expect(state.tabs[0].content).toBe('content1');
+      // 重新打开同一文件时，如果提供了新内容，应刷新
+      expect(state.tabs[0].content).toBe('new content');
     });
 
     it('应能从文件路径推断语言类型', () => {

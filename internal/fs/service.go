@@ -56,6 +56,22 @@ func isPathSafe(targetPath, basePath string) bool {
 	return false
 }
 
+// FileSize 返回指定文件的大小（字节），不读取文件内容
+func (s *FileService) FileSize(path string) (int64, error) {
+	if strings.Contains(path, "..") {
+		return 0, fmt.Errorf("非法路径: %s", path)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, fmt.Errorf("获取文件信息失败: %w", err)
+	}
+	if info.IsDir() {
+		return 0, fmt.Errorf("路径是目录: %s", path)
+	}
+	return info.Size(), nil
+}
+
 // ReadFile 读取指定路径的文件内容
 func (s *FileService) ReadFile(path string) ([]byte, error) {
 	// 安全检查：路径不能包含 .. 等目录遍历字符
