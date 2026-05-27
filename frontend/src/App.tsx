@@ -33,7 +33,7 @@ import { useConsoleStore } from './stores/useConsoleStore';
 import type { ConsoleEntry } from './stores/useConsoleStore';
 import { TaskCard } from './components/Task/TaskCard';
 import { TaskCreateDialog } from './components/Task/TaskCreateDialog';
-import { BranchExists, CreateBranch } from './types/wails';
+import { BranchExists, CreateBranch, Checkout } from './types/wails';
 import { ReadFile, FileSize } from '../wailsjs/go/fs/FileService';
 import { LargeFileDialog } from './components/Editor/LargeFileDialog';
 import { LARGE_FILE_THRESHOLD } from './components/Editor/editorMode';
@@ -514,6 +514,7 @@ function App() {
 
   async function handleCreateTask(task: {
     title: string;
+    description: string;
     branch: string;
     tag: string;
     tagColor: string;
@@ -525,14 +526,14 @@ function App() {
           `分支 "${task.branch}" 已存在。\n\n是否切换到该分支？\n（取消则重新输入）`
         );
         if (shouldSwitch) {
-          await CreateBranch(task.branch);
+          await Checkout(task.branch);
         } else {
           return;
         }
       } else {
         await CreateBranch(task.branch);
       }
-      
+
       addTask({ ...task, status: 'pending' });
       setTaskCreateOpen(false);
       showAppToast(`任务已创建: ${task.title}`);

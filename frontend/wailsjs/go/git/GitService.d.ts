@@ -6,7 +6,7 @@ export function Branch():Promise<string>;
 
 export function BranchExists(arg1:string):Promise<boolean>;
 
-export function Branches():Promise<Array<git.GitBranch>>;
+export function Branches(arg1:string):Promise<Array<git.GitBranch>>;
 
 export function Checkout(arg1:string):Promise<void>;
 

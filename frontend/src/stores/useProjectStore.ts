@@ -80,13 +80,22 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
     try {
       const projects = await ListProjects();
       const projectList = projects || [];
-      // 如果有项目且没有当前项目，自动选择第一个
+      // 如果有项目且没有当前项目，自动选择第一个并初始化 Git
       if (projectList.length > 0 && !get().currentProject) {
-        set({ 
-          projects: projectList, 
-          currentProject: projectList[0],
-          isLoading: false 
+        const firstProject = projectList[0];
+        set({
+          projects: projectList,
+          currentProject: firstProject,
+          isLoading: false
         });
+        // 初始化 Git 仓库路径（Go 后端 & Zustand store），否则后续
+        // loadBranches / loadStatus 会因 repoPath 为空而失败
+        try {
+          await SetCurrentProject(firstProject.path);
+          await useGitStore.getState().setRepoPath(firstProject.path);
+        } catch (err) {
+          console.error('初始化 Git 仓库路径失败:', err);
+        }
       } else {
         set({ projects: projectList, isLoading: false });
       }
@@ -179,10 +188,9 @@ export const useProjectStore = create<ProjectState & ProjectActions>()((set, get
       errors.push(msg);
     }
 
-    // 加载 Git 状态
+    // 加载 Git 状态（setRepoPath 内部会加载 status/summary/branches/commits）
     try {
-      await useGitStore.getState().loadStatus(project.path);
-      await useGitStore.getState().loadSummary(project.path);
+      await useGitStore.getState().setRepoPath(project.path);
     } catch (err: any) {
       const msg = err?.message || '加载 Git 状态失败';
       console.error('加载 Git 状态失败:', err);

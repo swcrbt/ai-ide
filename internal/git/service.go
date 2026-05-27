@@ -295,7 +295,11 @@ func (s *GitService) Branch() (string, error) {
 }
 
 // Branches 获取所有分支列表
-func (s *GitService) Branches() ([]GitBranch, error) {
+func (s *GitService) Branches(path string) ([]GitBranch, error) {
+	if path != "" {
+		s.repoPath = path
+	}
+
 	if s.repoPath == "" {
 		return nil, fmt.Errorf("未设置仓库路径")
 	}
@@ -403,7 +407,7 @@ func (s *GitService) BranchExists(branch string) (bool, error) {
 	}
 
 	// 获取所有分支列表
-	branches, err := s.Branches()
+	branches, err := s.Branches("")
 	if err != nil {
 		return false, err
 	}

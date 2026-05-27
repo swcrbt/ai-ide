@@ -437,6 +437,64 @@ func (hm *ChatHistoryManager) LoadAllSessionsFromDB() error {
 	return rows.Err()
 }
 
+// GenerateTitle 根据任务内容生成合适的标题
+// 优先使用 AI 生成，无可用 Provider 时回退到本地启发式
+func (hm *ChatHistoryManager) GenerateTitle(ctx context.Context, content string) string {
+	// 尝试获取最佳可用 Provider
+	providerConfig, err := hm.manager.GetBestProvider()
+	if err != nil || !providerConfig.Enabled {
+		return GenerateTitleLocal(content)
+	}
+
+	client := NewAIClient(providerConfig)
+	client.SetTimeout(10 * time.Second)
+
+	req := ChatRequest{
+		Model: providerConfig.Model,
+		Messages: []Message{
+			{Role: RoleSystem, Content: "根据用户输入的任务内容，生成一个简洁的任务标题。标题不超过20个字，只返回标题本身，不要有任何解释或标点符号结尾。"},
+			{Role: RoleUser, Content: content},
+		},
+		Stream:       false,
+		Temperature:  0.3,
+		MaxTokens:    50,
+	}
+
+	resp, err := client.ChatCompletionSync(ctx, req)
+	if err != nil {
+		return GenerateTitleLocal(content)
+	}
+
+	if len(resp.Choices) > 0 {
+		title := strings.TrimSpace(resp.Choices[0].Message.Content)
+		title = strings.Trim(title, "\"'「」")
+		if title == "" {
+			return GenerateTitleLocal(content)
+		}
+		runes := []rune(title)
+		if len(runes) > 30 {
+			return string(runes[:30]) + "..."
+		}
+		return title
+	}
+
+	return GenerateTitleLocal(content)
+}
+
+// GenerateTitleLocal 本地启发式标题生成：取内容首行，截断到 30 字
+func GenerateTitleLocal(content string) string {
+	lines := strings.Split(content, "\n")
+	firstLine := strings.TrimSpace(lines[0])
+	if firstLine == "" {
+		return "新任务"
+	}
+	runes := []rune(firstLine)
+	if len(runes) > 30 {
+		return string(runes[:30]) + "..."
+	}
+	return firstLine
+}
+
 // DeleteSessionFromDB 从数据库删除会话及其历史
 func DeleteSessionFromDB(sessionID string) error {
 	if config.DB == nil {

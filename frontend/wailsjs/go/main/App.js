@@ -22,6 +22,10 @@ export function CreateChatSession() {
   return window['go']['main']['App']['CreateChatSession']();
 }
 
+export function GenerateTitle(arg1) {
+  return window['go']['main']['App']['GenerateTitle'](arg1);
+}
+
 export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
 }

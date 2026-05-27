@@ -116,8 +116,18 @@ export const useGitStore = create<GitState>()((set, get) => ({
   loadStatus: async (path) => {
     set({ isLoading: true });
     try {
-      const repoPath = path || get().repoPath;
-      if (!repoPath) return;
+      let repoPath = path || get().repoPath;
+      if (!repoPath) {
+        try {
+          repoPath = await GetRepoPath();
+        } catch {
+          // 忽略
+        }
+      }
+      if (!repoPath) {
+        set({ isLoading: false });
+        return;
+      }
 
       const status = await Status(repoPath);
 
@@ -149,7 +159,14 @@ export const useGitStore = create<GitState>()((set, get) => ({
   // 加载 Git 概要（用于左侧卡片）
   loadSummary: async (path) => {
     try {
-      const repoPath = path || get().repoPath;
+      let repoPath = path || get().repoPath;
+      if (!repoPath) {
+        try {
+          repoPath = await GetRepoPath();
+        } catch {
+          // 忽略
+        }
+      }
       if (!repoPath) return;
 
       const summary = await Summary(repoPath);
@@ -163,7 +180,16 @@ export const useGitStore = create<GitState>()((set, get) => ({
   // 加载分支列表
   loadBranches: async () => {
     try {
-      const branches = await Branches();
+      let repoPath = get().repoPath;
+      if (!repoPath) {
+        // 尝试从 Go 后端获取已设置的 repoPath
+        try {
+          repoPath = await GetRepoPath();
+        } catch {
+          // 忽略
+        }
+      }
+      const branches = await Branches(repoPath);
       set({ branches });
     } catch (err) {
       console.error('加载分支列表失败:', err);
@@ -174,6 +200,19 @@ export const useGitStore = create<GitState>()((set, get) => ({
   // 加载提交历史
   loadCommits: async () => {
     try {
+      // 确保 Go 后端 repoPath 已设置
+      let repoPath = get().repoPath;
+      if (!repoPath) {
+        try {
+          repoPath = await GetRepoPath();
+        } catch {
+          // 忽略
+        }
+      }
+      if (!repoPath) {
+        set({ commits: [] });
+        return;
+      }
       const commits = await Log(20);
       set({ commits });
     } catch (err) {

@@ -10,8 +10,8 @@ export function BranchExists(arg1) {
   return window['go']['git']['GitService']['BranchExists'](arg1);
 }
 
-export function Branches() {
-  return window['go']['git']['GitService']['Branches']();
+export function Branches(arg1) {
+  return window['go']['git']['GitService']['Branches'](arg1);
 }
 
 export function Checkout(arg1) {

@@ -113,6 +113,14 @@ func (a *App) BranchExists(branch string) (bool, error) {
 	return exists, nil
 }
 
+// GenerateTitle 根据任务内容生成合适的标题
+func (a *App) GenerateTitle(content string) string {
+	if a.ChatManager == nil {
+		return ai.GenerateTitleLocal(content)
+	}
+	return a.ChatManager.GenerateTitle(a.ctx, content)
+}
+
 // CreateChatSession 创建新的 AI 聊天会话
 func (a *App) CreateChatSession() (string, error) {
 	if a.ChatManager == nil {

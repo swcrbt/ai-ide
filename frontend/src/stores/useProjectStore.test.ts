@@ -19,9 +19,11 @@ vi.mock('../types/wails', () => ({
   SetCurrentProject: vi.fn(),
 }));
 
-const mockLoadTree = vi.fn();
-const mockLoadStatus = vi.fn();
-const mockLoadSummary = vi.fn();
+const mockLoadTree = vi.fn().mockResolvedValue(undefined);
+const mockLoadStatus = vi.fn().mockResolvedValue(undefined);
+const mockLoadSummary = vi.fn().mockResolvedValue(undefined);
+const mockSetRepoPath = vi.fn().mockResolvedValue(undefined);
+const mockLoadBranches = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('./useExplorerStore', () => ({
   useExplorerStore: {
@@ -37,6 +39,8 @@ vi.mock('./useGitStore', () => ({
     getState: vi.fn(() => ({
       loadStatus: mockLoadStatus,
       loadSummary: mockLoadSummary,
+      setRepoPath: mockSetRepoPath,
+      loadBranches: mockLoadBranches,
     })),
   },
 }));
@@ -177,7 +181,7 @@ describe('useProjectStore', () => {
   });
 
   describe('switchProject', () => {
-    it('should set current project, call SetCurrentProject, load tree and git status', async () => {
+    it('should set current project, call SetCurrentProject, load tree and set repo path', async () => {
       const mockProject = { id: 1, name: 'Project 1', path: '/path/1', createdAt: '2024-01-01', updatedAt: '2024-01-01' };
       useProjectStore.setState({
         projects: [mockProject],
@@ -189,8 +193,7 @@ describe('useProjectStore', () => {
       expect(useProjectStore.getState().currentProject).toEqual(mockProject);
       expect(SetCurrentProject).toHaveBeenCalledWith('/path/1');
       expect(mockLoadTree).toHaveBeenCalledWith('/path/1');
-      expect(mockLoadStatus).toHaveBeenCalledWith('/path/1');
-      expect(mockLoadSummary).toHaveBeenCalledWith('/path/1');
+      expect(mockSetRepoPath).toHaveBeenCalledWith('/path/1');
     });
 
     it('should throw error if project not found', async () => {
