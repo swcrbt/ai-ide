@@ -35,6 +35,11 @@ func setupGitUser(t *testing.T) {
 	t.Setenv("GIT_AUTHOR_EMAIL", "test@example.com")
 	t.Setenv("GIT_COMMITTER_NAME", "Test User")
 	t.Setenv("GIT_COMMITTER_EMAIL", "test@example.com")
+
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	os.WriteFile(filepath.Join(tmpHome, ".gitconfig"),
+		[]byte("[safe]\n\tdirectory = *\n"), 0644)
 }
 
 func makeInitialCommit(t *testing.T, svc *git.GitService, dir string) {

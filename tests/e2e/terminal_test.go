@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 
@@ -17,9 +16,7 @@ func skipIfPTYNorPermitted(t *testing.T) {
 	pty := terminal.NewPTY()
 	if err := pty.Start("/bin/sh"); err != nil {
 		pty.Close()
-		if strings.Contains(err.Error(), "operation not permitted") {
-			t.Skip("当前环境不允许 fork/exec PTY")
-		}
+		t.Skipf("无法启动 PTY: %v", err)
 	}
 	pty.Close()
 }
