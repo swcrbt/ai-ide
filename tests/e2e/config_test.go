@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/swcrbt/ai-ide/internal/config"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func setupTestDB(t *testing.T) (*sql.DB, func()) {
@@ -16,7 +16,7 @@ func setupTestDB(t *testing.T) (*sql.DB, func()) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
 
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		t.Fatalf("打开测试数据库失败: %v", err)
 	}

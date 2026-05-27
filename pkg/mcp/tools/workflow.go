@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // WorkflowTool 工作流管理工具
@@ -52,7 +52,7 @@ func (t *WorkflowTool) initDB() error {
 	}
 
 	dbPath := filepath.Join(dataDir, "workflows.db")
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return fmt.Errorf("打开数据库失败: %w", err)
 	}

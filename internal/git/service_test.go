@@ -31,6 +31,12 @@ func setupTestRepo(t *testing.T) (string, *GitService, func()) {
 	service.runGitCommand("config", "user.email", "test@example.com")
 	service.runGitCommand("config", "user.name", "Test User")
 
+	// CI 环境允许任意目录的临时仓库
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	os.WriteFile(filepath.Join(tmpHome, ".gitconfig"),
+		[]byte("[safe]\n\tdirectory = *\n"), 0644)
+
 	// 创建初始提交，使 HEAD 存在
 	initFile := filepath.Join(tmpDir, ".gitkeep")
 	os.WriteFile(initFile, []byte(""), 0644)

@@ -21,6 +21,6 @@
     "entitlements": "build/darwin/entitlements.plist"
   },
   "postBuildHooks": {
-    "darwin/*": "codesign --force --deep --sign - --entitlements /Users/swcrbt/develop/github/swcrbt/ai-ide/build/darwin/entitlements.plist ${bin}"
+    "darwin/*": "codesign --force --deep --sign - --entitlements ../darwin/entitlements.plist ${bin}"
   }
 }

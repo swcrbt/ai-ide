@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // DB 全局数据库连接实例
@@ -30,7 +30,7 @@ func InitDatabase() error {
 	dbPath := filepath.Join(appDir, "ai-ide.db")
 
 	// 打开数据库连接
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return fmt.Errorf("打开数据库失败: %w", err)
 	}

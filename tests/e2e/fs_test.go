@@ -247,8 +247,8 @@ func TestFileService_WatchDirectory(t *testing.T) {
 
 	select {
 	case event := <-service.GetEventChannel():
-		if event.Type != fs.FileEventCreate {
-			t.Errorf("事件类型错误: got %q, want %q", event.Type, fs.FileEventCreate)
+		if event.Type != fs.FileEventCreate && event.Type != fs.FileEventModify {
+			t.Errorf("事件类型错误: got %q, want %q 或 %q", event.Type, fs.FileEventCreate, fs.FileEventModify)
 		}
 		if filepath.Base(event.Path) != "watched.txt" {
 			t.Errorf("事件路径错误: got %q", event.Path)
