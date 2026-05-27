@@ -40,14 +40,15 @@ test.describe('Real Environment - Editor', () => {
   test('ReadFile returns base64 string from real Go backend', async ({
     page,
   }) => {
-    const result = await page.evaluate(async () => {
+    const projectRoot = process.cwd();
+    const result = await page.evaluate(async (root: string) => {
       const go = (window as any).go;
       if (!go?.fs?.FileService?.ReadFile) {
         return { error: 'ReadFile not available' };
       }
       try {
         const bytes = await go.fs.FileService.ReadFile(
-          '/Users/swcrbt/develop/github/swcrbt/ai-ide/frontend/package.json'
+          `${root}/frontend/package.json`
         );
         return {
           type: typeof bytes,
@@ -57,7 +58,7 @@ test.describe('Real Environment - Editor', () => {
       } catch (e: any) {
         return { error: e.message || String(e) };
       }
-    });
+    }, projectRoot);
 
     expect(result.error).toBeUndefined();
     expect(result.len).toBeGreaterThan(0);

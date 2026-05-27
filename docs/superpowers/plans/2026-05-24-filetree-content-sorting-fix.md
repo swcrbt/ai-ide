@@ -163,7 +163,7 @@ import (
 - [ ] **步骤 3：运行 Go 测试**
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 go test ./internal/fs/ -v
 ```
 
@@ -183,14 +183,14 @@ git commit -m "fix: 文件树按目录优先、字母顺序排序"
 - [ ] **步骤 1：构建应用**
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 make build
 ```
 
 - [ ] **步骤 2：运行前端测试**
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 npx vitest run --config frontend/vitest.config.ts frontend/src/
 ```
 

@@ -409,7 +409,7 @@ func TestSetCurrentProject(t *testing.T) {
 ### 步骤 3：运行测试验证
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 go test ./internal/project/ -v
 ```
 
@@ -699,7 +699,7 @@ describe('useProjectStore', () => {
 ### 步骤 4：运行测试
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide/frontend
+cd <project-root>/frontend
 npm test -- useProjectStore.test.ts
 ```
 
@@ -952,7 +952,7 @@ describe('AddProjectDialog', () => {
 ### 步骤 3：运行测试
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide/frontend
+cd <project-root>/frontend
 npm test -- AddProjectDialog.test.tsx
 ```
 
@@ -1332,7 +1332,7 @@ git commit -m "feat: FileTreeNode 集成 Git 状态显示"
 ### 步骤 1：运行 Wails 生成
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 wails generate module
 ```
 
@@ -1341,7 +1341,7 @@ wails generate module
 ### 步骤 2：验证 TypeScript 编译
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide/frontend
+cd <project-root>/frontend
 npm run build
 ```
 
@@ -1350,7 +1350,7 @@ npm run build
 ### 步骤 3：运行前端测试
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide/frontend
+cd <project-root>/frontend
 npm test
 ```
 
@@ -1359,7 +1359,7 @@ npm test
 ### 步骤 4：运行后端测试
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 go test ./...
 ```
 
@@ -1379,7 +1379,7 @@ git commit -m "chore: 生成 Wails 绑定文件"
 ### 步骤 1：运行完整测试套件
 
 ```bash
-cd /Users/swcrbt/develop/github/swcrbt/ai-ide
+cd <project-root>
 go test ./... -v
 cd frontend && npm test
 ```
